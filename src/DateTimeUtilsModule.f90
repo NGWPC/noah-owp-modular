@@ -2,6 +2,7 @@
 ! copied from the GMET code at https://github.com/NCAR/GMET/
 
 module DateTimeUtilsModule
+  use noahowp_log_module
 
   implicit none
   public
@@ -89,6 +90,7 @@ contains
       nargs = nargs + 1
       if(nargs .gt. size(args)) then
         print *,'Number of predictors larger than expected, check nPredict'
+        call write_log("Number of predictors larger than expected, check nPredict", "FATAL")
         stop
       end if
       call split (str, delims, args(nargs))
@@ -432,12 +434,12 @@ contains
  
     do
       read (nunitr, '(a)', iostat=ios) line ! read input line
-      if (ios /= 0) return
+      if (ios /= 0) then; call write_log("Error reading line :"//line, "ERROR"); return; end if
       line = adjustl (line)
       ipos = index (line, '!')
       if (ipos == 1) cycle
       if (ipos /= 0) line = line (:ipos-1)
-      if (len_trim(line) /= 0) exit
+      if (len_trim(line) /= 0) then; call write_log("Empty Line : " //line//"  Exiting", "ERROR"); exit; end if
     end do
     return
  
@@ -881,11 +883,14 @@ contains
     integer :: sec, min, hour, day, month, year, error
  
     call parse_date (date, year, month, day, hour, min, sec, error)
-    
+    !call write_log(date// "," //itoa(year)// "," //itoa(month)// "," //itoa(day)// "," //itoa(hour)// "," //itoa(min)// ","//itoa(sec)//"," //itoa(error), 'INFO')
     if (error /= 0) then
       date_to_unix = -9999.99
       print*, 'error in date_to_unix -- date, year, month, day, hour, min, sec, error:'
       print*, date, year, month, day, hour, min, sec, error
+      call write_log('error in date_to_unix -- date, year, month, day, hour, min, sec, error:', 'ERROR')
+      call write_log(date// "," //itoa(year)// "," //itoa(month)// "," //itoa(day)// "," //itoa(hour)// "," //itoa(min)// "," //itoa(sec)//"," //itoa(error), 'ERROR')
+      call write_log("STOPPING ..", "FATAL")
       stop !return
     end if
  
@@ -974,6 +979,9 @@ contains
     if(abs(mod(end_datetime - start_datetime, dt)) > 1e-5) then
       print*, 'start and end datetimes are not an even multiple of dt -- check dates in namelist' 
       print*, 'end_datetime, start_datetime, dt, mod:', end_datetime, start_datetime, dt, mod(end_datetime-start_datetime, dt) 
+      call write_log('start and end datetimes are not an even multiple of dt -- check dates in namelist', 'FATAL')
+      call write_log('end_datetime, start_datetime, dt, mod:' // r8toa(end_datetime)// ','//r8toa(start_datetime)//","//rtoa(dt)//"," // r8toa(mod(end_datetime-start_datetime, dt)), "FATAL")
+      call write_log("STOPPING ..", "FATAL")
       stop 
     end if
 
