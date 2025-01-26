@@ -7,7 +7,8 @@ include ../user_build_options
 
 F90FLAGS := -cpp ${F90FLAGS}
 
-OBJS = ErrorCheckModule.o \
+OBJS = noahowpLogger.o \
+       ErrorCheckModule.o \
        NamelistRead.o \
        ParametersRead.o  \
        LevelsType.o   \
@@ -45,7 +46,7 @@ OBJS = ErrorCheckModule.o \
 all:	$(OBJS)
 
 .f90.o:
-	$(COMPILERF90) -c $(F90FLAGS) $(FREESOURCE) $(NETCDFMOD) -I../driver $(*).f90
+	$(COMPILERF90) -c $(F90FLAGS) $(FREESOURCE) $(NETCDFMOD) -I../driver -I../fdatetime $(*).f90
 
 #
 # This command cleans up object (etc) files:
@@ -61,6 +62,7 @@ clean:
 NamelistRead.o: ErrorCheckModule.o
 LevelsType.o: NamelistRead.o
 DomainType.o: NamelistRead.o LevelsType.o DateTimeUtilsModule.o
+DateTimeUtilsModule.o: noahowpLogger.o
 OptionsType.o: NamelistRead.o
 ParametersType.o: NamelistRead.o ParametersRead.o
 ForcingType.o: NamelistRead.o
