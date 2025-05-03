@@ -273,6 +273,21 @@
   end subroutine create_logger
 
 
+  function fit_string(str, target_len) result(fixed_str)
+    implicit none
+    character(len=*), intent(in) :: str
+    integer, intent(in) :: target_len
+    character(len=target_len) :: fixed_str
+    integer :: copy_len
+  
+    ! Determine how many characters to copy (min of source or target length)
+    copy_len = min(len_trim(str), target_len)
+  
+    ! Copy the appropriate number of characters, right pad with spaces automatically
+    fixed_str = ' '  ! Initialize to spaces
+    fixed_str(1:copy_len) = str(1:copy_len)
+  end function fit_string
+
   subroutine write_log(msg, log_level_str)
    !this subroutine writes the log message to the log file
 
@@ -285,12 +300,15 @@
 
    logical :: exist
 
+   character(len=7) :: fixed_lvl
+
    call get_log_level(log_level_str, log_level)
    if (log_level < default_log_level) return
 
    ! get the present time and create the message that will be sent to the log file
    call get_utc_time(utc_time)
-   log_msg = trim(utc_time) //achar(9) // "NOAHOWP"//achar(9)//  log_level_str // achar(9)// msg
+   fixed_lvl = fit_string(log_level_str,7)
+   log_msg = trim(utc_time) // " " // "NOAHOWP " // " " //  fixed_lvl // " " // msg
    if(len_trim(log_file_name) == 0) then
      call get_log_file_name()
      print *, 'log file name: ' // log_file_name
