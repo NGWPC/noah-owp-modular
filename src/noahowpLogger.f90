@@ -31,12 +31,14 @@ module noahowp_log_module
    character(len=16), parameter :: EV_MODULE_LOGLEVEL = "NOAHOWP_LOGLEVEL"
    character(len=7),  parameter :: log_module_name = "NOAHOWP"
    integer, parameter           :: LOG_MODULE_NAME_LEN = 8  ! // Width of module name for log entries
+   integer, parameter           :: LOG_ENTRY_LEVEL_LEN = 7  ! // Width of log level for log entries
 
 contains
 
    subroutine initialize_logger()
-      character(len=256) :: log_env
+      character(len=256) :: log_env, log_msg
       character(len=8) :: log_str
+      integer :: save_log_level
 
       logger_initialized = .true.
       call get_environment_variable(EV_EWTS_LOGGING, log_env)
@@ -70,6 +72,12 @@ contains
 
       ! Get the log file path by calling set_log_file_path
       call set_log_file_path()
+
+      save_log_level = log_level
+      log_level = LOG_LEVEL_INFO ! Ensure this INFO message is always logged
+      log_msg = "Log level set to " // log_str
+      call write_log(log_msg, log_level);
+      log_level = save_log_level;
    end subroutine initialize_logger
 
    subroutine finalize_logger()
@@ -98,7 +106,7 @@ contains
       integer, intent (in) :: msg_level
       character(len=40) :: timestamp, log_level_str
       character(len=LOG_MODULE_NAME_LEN) :: fixed_tag
-      character(len=7) :: fixed_lvl
+      character(len=LOG_ENTRY_LEVEL_LEN) :: fixed_lvl
       character(len=1100) :: log_msg
 
       if (.not. logger_initialized) then
@@ -125,7 +133,7 @@ contains
          ! Log the message
          call create_timestamp(.false., .true., .true., timestamp)
          fixed_tag = fit_string(log_module_name, LOG_MODULE_NAME_LEN)
-         fixed_lvl = fit_string(log_level_str,7)
+         fixed_lvl = fit_string(log_level_str,LOG_ENTRY_LEVEL_LEN)
          log_msg = trim(timestamp) // " " // fixed_tag // " " // fixed_lvl // " " // trim(message)
          if (log_file_ready(.true.)) then
             write(log_unit, '(A)') trim(log_msg)
