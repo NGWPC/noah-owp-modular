@@ -28,7 +28,7 @@ program model_driver
   !  All driver initialization code in ../src/RunModule.f90
   !---------------------------------------------------------------------
   print*, "Initializing..."
-  call write_log("Initializing NoahModularDriver", "INFO")
+  call write_log("Initializing NoahModularDriver", LOG_LEVEL_INFO)
   call get_command_argument(1, arg)
   status = m%initialize(arg)
 
@@ -43,7 +43,7 @@ program model_driver
   
   ! loop through while current time <= end time
   print*, "Running..."
-  call write_log("Running NoahModularDriver", "INFO")
+  call write_log("Running NoahModularDriver", LOG_LEVEL_INFO)
   do while (current_time < end_time)
     status = m%update()                       ! run the model one time step
     status = m%get_current_time(current_time) ! update current_time
@@ -54,9 +54,9 @@ program model_driver
   ! All model finalization code in ../src/RunModule.f90
   !---------------------------------------------------------------------
   print*, "Finalizing..."
-  call write_log("Finalizing NoahModularDriver", "INFO")
+  call write_log("Finalizing NoahModularDriver", LOG_LEVEL_INFO)
   status = m%finalize()
-  call write_log("Finished NoahModularDriver", "INFO")
+  call write_log("Finished NoahModularDriver", LOG_LEVEL_INFO)
   print*, "Finished!"
 
 end program

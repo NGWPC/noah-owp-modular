@@ -1092,7 +1092,7 @@ contains
   
     IF(ZLVL <= ZPD) THEN
        write(*,*) 'WARNING: critical problem: ZLVL <= ZPD; model stops'
-       call write_log('WARNING: critical problem: ZLVL <= ZPD; model stops', 'WARN')
+       call write_log('WARNING: critical problem: ZLVL <= ZPD; model stops', LOG_LEVEL_SEVERE)
     ENDIF
 
     TMPCM = LOG((ZLVL-ZPD) / Z0M)

@@ -26,7 +26,7 @@ contains
 
     if(err/=0)then
       write(*, '(A)') 'FATAL ERROR: '//trim(message)
-      call write_log("FATAL ERROR: "//trim(message)// " STOPPING..", "FATAL")
+      call write_log("FATAL ERROR: "//trim(message)// " STOPPING..", LOG_LEVEL_FATAL)
       call flush(6)
       stop
     endif
@@ -46,7 +46,7 @@ contains
 
     withinbound = .true.
     if ( var < lower_bound .or. var > upper_bound ) then
-       call write_log(itoa(var) //" is not within upper and lower bound", "ERROR")     
+       call write_log(itoa(var) //" is not within upper and lower bound", LOG_LEVEL_WARNING)     
        withinbound = .false.
     end if
 
@@ -65,7 +65,7 @@ contains
 
     withinbound = .true.
     if ( var < lower_bound .or. var > upper_bound ) then
-       call write_log(rtoa(var) //" is not within upper and lower bound", "ERROR")    
+       call write_log(rtoa(var) //" is not within upper and lower bound", LOG_LEVEL_WARNING)    
        withinbound = .false.
     end if
 

@@ -622,7 +622,7 @@ CONTAINS
 
     if (ierr/=0) then
       write(message,fmt='(A)') 'ParametersRead.f90: read_soil_parameters: failure opening SOILPARM.TBL'
-      call write_log(message, 'ERROR')
+      call write_log(message, LOG_LEVEL_WARNING)
       call handle_err(ierr, message)
     end if
 
@@ -657,7 +657,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-      call write_log('ParametersRead.f90: read_soil_parameters: failure opening GENPARM.TBL', 'ERROR')
+      call write_log('ParametersRead.f90: read_soil_parameters: failure opening GENPARM.TBL', LOG_LEVEL_WARNING)
       call handle_err(ierr, 'ParametersRead.f90: read_soil_parameters: failure opening GENPARM.TBL')
     end if
 
@@ -734,7 +734,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_rad_parameters: Cannot find file MPTABLE.TBL', 'ERROR')     
+       call write_log('ParametersRead.f90: read_rad_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_rad_parameters: Cannot find file MPTABLE.TBL')
     endif
 
@@ -804,7 +804,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_global_parameters: Cannot find file MPTABLE.TBL', 'ERROR')     
+       call write_log('ParametersRead.f90: read_global_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_global_parameters: Cannot find file MPTABLE.TBL')
     endif
 
@@ -985,7 +985,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_crop_parameters: Cannot find file MPTABLE.TBL', 'ERROR')     
+       call write_log('ParametersRead.f90: read_crop_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_crop_parameters: Cannot find file MPTABLE.TBL')
     endif
 
@@ -1170,7 +1170,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_irrigation_parameters: Cannot find file MPTABLE.TBL', "ERROR")     
+       call write_log('ParametersRead.f90: read_irrigation_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_irrigation_parameters: Cannot find file MPTABLE.TBL')
     endif
 
@@ -1230,7 +1230,7 @@ CONTAINS
       open(15, status='old', form='formatted', action='read', iostat=ierr)
     end if
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_tiledrain_parameters: Cannot find file MPTABLE.TBL', "ERROR")     
+       call write_log('ParametersRead.f90: read_tiledrain_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_tiledrain_parameters: Cannot find file MPTABLE.TBL')
     endif
     read(15,tiledrain_parameters)
@@ -1285,7 +1285,7 @@ CONTAINS
     end if
 
     if (ierr /= 0) then
-       call write_log('ParametersRead.f90: read_optional_parameters: Cannot find file MPTABLE.TBL', "ERROR")     
+       call write_log('ParametersRead.f90: read_optional_parameters: Cannot find file MPTABLE.TBL', LOG_LEVEL_WARNING)     
        call handle_err(ierr, 'ParametersRead.f90: read_optional_parameters: Cannot find file MPTABLE.TBL')
     endif
 
@@ -1300,7 +1300,7 @@ CONTAINS
     integer,     intent(in) :: err             ! error code
     character(*),intent(in) :: message         ! error message
     if(err/=0)then
-      call write_log('FATAL ERROR: '//trim(message)// ' ..STOPPING', "FATAL")      
+      call write_log('FATAL ERROR: '//trim(message)// ' ..STOPPING', LOG_LEVEL_FATAL)      
       write(*,*) 'FATAL ERROR: '//trim(message)
       call flush(6)
       stop
