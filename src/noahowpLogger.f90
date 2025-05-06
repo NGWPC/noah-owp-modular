@@ -41,19 +41,21 @@ contains
       integer :: save_log_level
 
       logger_initialized = .true.
-      call get_environment_variable(EV_EWTS_LOGGING, log_env)
+      call get_env_var(EV_EWTS_LOGGING, log_env)
       if (trim(log_env) == "ENABLED") then
          logging_enabled = .true.
-         print *, MODULE_NAME, ": Logger Enabled"
-      else
+         print *,trim(MODULE_NAME)," Logging ", trim(log_env)
+         call flush(6)
+        else
          logging_enabled = .false.
-         print *, MODULE_NAME, ": Logger Disabled"
+         print *,trim(MODULE_NAME)," Logging ", trim(log_env)
+         call flush(6)
          return
       end if
+      ! Here because return was not executed above
 
       ! Set log level from environment variable (if exists)
-      call get_environment_variable(EV_MODULE_LOGLEVEL, log_env)
-
+      call get_env_var(EV_MODULE_LOGLEVEL, log_env)
       log_str = trim(log_env)
       if (log_str == "DEBUG" ) then
          log_level = LOG_LEVEL_DEBUG
@@ -68,7 +70,8 @@ contains
       else
          log_level = LOG_LEVEL_INFO  ! Default level
       end if
-      print *, MODULE_NAME, " Log level set to ", log_str
+      print *, trim(MODULE_NAME),"Log level set to ", log_str
+      call flush(6)
 
       ! Get the log file path by calling set_log_file_path
       call set_log_file_path()
@@ -79,12 +82,6 @@ contains
       call write_log(log_msg, log_level);
       log_level = save_log_level;
    end subroutine initialize_logger
-
-   subroutine finalize_logger()
-      if (logging_enabled) then
-         close(log_unit)
-      end if
-   end subroutine finalize_logger
 
    function fit_string(str, target_len) result(fixed_str)
       implicit none
@@ -139,6 +136,7 @@ contains
             write(log_unit, '(A)') trim(log_msg)
          else
             print *, log_msg
+            call flush(6)
          end if
          close(log_unit) ! Since this is a shared file with other modules, need to close this acces after each write
       end if
@@ -204,53 +202,53 @@ contains
    subroutine set_log_file_path()
       character(len=256) :: env_var
       logical :: append_entries
-      logical :: module_log_env_exists = .false.
+      logical :: module_log_env_exists
       character(len=512) :: log_file_dir
       character(len=40) :: timestamp
       integer :: save_log_level
       character(len=1100) :: log_msg
 
       append_entries = .true.
-
+      module_log_env_exists = .false.
       ! Check if module log path environment exists
-      call get_environment_variable(EV_MODULE_LOGFILEPATH, env_var)
+      call get_env_var(EV_MODULE_LOGFILEPATH, env_var)
       if (trim(adjustl(env_var)) /= "") then
-         log_file_path = env_var
+         log_file_path = trim(env_var)
          module_log_env_exists = .true.
       else
          ! log file path not set yet
-         call get_environment_variable(EV_NGEN_LOGFILEPATH, env_var)
+         call get_env_var(EV_NGEN_LOGFILEPATH, env_var)
          if (trim(adjustl(env_var)) /= "") then
-            log_file_path = env_var
+            log_file_path = trim(env_var)
          else
             ! ngen log path does not exist. Create alternate log
             append_entries = .false.
             ! Determine parent dir
             if (directory_exists(LOG_DIR_NGENCERF)) then
-               log_file_dir = LOG_DIR_NGENCERF // DS // LOG_DIR_DEFAULT
+               log_file_dir = trim(LOG_DIR_NGENCERF) // DS // trim(LOG_DIR_DEFAULT)
             else
-               call get_environment_variable("HOME", env_var)
+               call get_env_var("HOME", env_var)
                if (trim(adjustl(env_var)) /= "") then
-                  log_file_dir = env_var // DS // LOG_DIR_DEFAULT
+                  log_file_dir = trim(env_var) // DS // trim(LOG_DIR_DEFAULT)
                else
-                  log_file_dir = "~" // DS // LOG_DIR_DEFAULT
+                  log_file_dir = "~" // DS // trim(LOG_DIR_DEFAULT)
                end if
             end if
             ! Ensure parent log dir exists
             if (create_directory(log_file_dir)) then
                ! Get dir for this log
-               call get_environment_variable("USER", env_var)
+               call get_env_var("USER", env_var)
                if (trim(adjustl(env_var)) /= "") then
-                  log_file_dir = log_file_dir // DS // env_var
+                  log_file_dir = trim(log_file_dir) // DS // trim(env_var)
                else
                   ! Get a date only timestamp
                   call create_timestamp(.true., .false., .false., timestamp)
-                  log_file_dir = log_file_dir // DS // timestamp
+                  log_file_dir = trim(log_file_dir) // DS // trim(timestamp)
                end if
                if (create_directory(log_file_dir)) then
                   ! Set log file name with <date>T<time> as suffix
                   call create_timestamp(.false., .false., .false., timestamp)
-                  log_file_path = log_file_dir // DS // MODULE_NAME // "_" // timestamp // "." // LOG_FILE_EXT
+                  log_file_path = trim(log_file_dir) // DS // trim(MODULE_NAME) // "_" // trim(timestamp) // "." // trim(LOG_FILE_EXT)
                end if
             end if
          end if
@@ -258,8 +256,9 @@ contains
 
       if (log_file_ready(append_entries)) then
          if (.not. module_log_env_exists) then
-            call write_environment_variable(EV_MODULE_LOGFILEPATH, log_file_path)
-            print *, "Module ", MODULE_NAME, " Log File: ", log_file_path
+            call write_env_var(EV_MODULE_LOGFILEPATH, log_file_path)
+            print *, "Module ", trim(MODULE_NAME), " Log File: ", trim(log_file_path)
+            call flush(6)
             save_log_level = log_level
             log_level = LOG_LEVEL_INFO ! Ensure this INFO message is always logged
             log_msg = "Logging started. Log File Path: " // log_file_path
@@ -268,6 +267,7 @@ contains
          end if
       else
          print *, "Unable to open log file. Log entries will be writen to stdout"
+         call flush(6)
       end if
    end subroutine set_log_file_path
 
@@ -275,7 +275,6 @@ contains
    logical function log_file_ready(append_mode)
       logical, intent(in) :: append_mode
       integer :: ios
-      character(len=8) :: log_position
 
       if (opened_once) then
          ! Make sure file pointer to the end of the file
@@ -286,33 +285,28 @@ contains
          else
             open(unit=log_unit, file=log_file_path, status='new', action='write', iostat=ios)
          end if
-         if (ios == 0) then
-            opened_once = .true.
-         else
-            opened_once = .false.
-         end if
+         opened_once = .true.
       end if
-      log_file_ready = opened_once
+      log_file_ready = .true.
    end function log_file_ready
 
-   subroutine get_environment_variable(var_name, value)
+   subroutine get_env_var(var_name, value)
       character(len=*), intent(in) :: var_name
       character(len=256), intent(out) :: value
       character(len=256) :: result
 
       call getenv(trim(adjustl(var_name)), result)
       value = result
-   end subroutine get_environment_variable
+   end subroutine get_env_var
 
-   subroutine write_environment_variable(var_name, value)
+   subroutine write_env_var(var_name, value)
       character(len=*), intent(in) :: var_name
       character(len=*), intent(in) :: value
 
       character(len=512) cmd;
       cmd = "export" // trim(var_name) // "=" // trim(value)
       call system(cmd)
-!        call setenv(trim(adjustl(var_name)), trim(adjustl(value)), 1)
-   end subroutine write_environment_variable
+   end subroutine write_env_var
 
    function is_logger_enabled() result(status)
       logical :: status
