@@ -89,7 +89,7 @@ contains
     !iret = nf90_def_var(ncid, "time",                 NF90_DOUBLE, (/time_dim/), time_id)
     call check (nf90_def_var(ncid, "time", NF90_DOUBLE, (/time_dim/), time_id), "time var def error", iret) 
     if (iret /= 0) then
-      call write_log("time var def error. Returning", "ERROR")
+      call write_log("time var def error. Returning", LOG_LEVEL_WARNING)
       return   ! with error checking
     end if 
 
@@ -237,7 +237,7 @@ contains
     integer, intent (out) :: error
  
     if (status /= nf90_noerr) then
-      call write_log(trim (info) // ": " // trim (nf90_strerror(status)), "ERROR")      
+      call write_log(trim (info) // ": " // trim (nf90_strerror(status)), LOG_LEVEL_WARNING)      
       print *, trim (info) // ": " // trim (nf90_strerror(status))
       error = 1
     end if

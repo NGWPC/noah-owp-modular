@@ -26,7 +26,7 @@ contains
        write(*,'(/," ***** Problem *****")')
        write(*,'(" ***** File ''", A, "'' does not exist.")') trim(filename)
        write(*,'(" ***** Check the forcing file specified as a command-line argument",/)')
-       call write_log("Problem :  File " // trim(filename) // " does not exist. STOPPING ..", 'FATAL')
+       call write_log("Problem :  File " // trim(filename) // " does not exist. STOPPING ..", LOG_LEVEL_FATAL)
        stop ":  ERROR EXIT"
     endif
     
@@ -34,7 +34,7 @@ contains
     open(10, file = trim(filename), form = 'formatted', action = 'read', iostat = ierr)
     if (ierr /= 0) then
        write(*,'("Problem opening file ''", A, "''")') trim(filename)
-       call write_log("Problem opening file "// trim(filename) //". STOPPING ..", "FATAL")
+       call write_log("Problem opening file "// trim(filename) //". STOPPING ..", LOG_LEVEL_FATAL)
        stop ":  ERROR EXIT"
     endif
     
@@ -171,7 +171,7 @@ contains
        endif
        if (ierr /= 0) then
           write(*,'("Error reading from data file.")')
-          call write_log("read_forcing_text: Error reading from data file.", "ERROR")
+          call write_log("read_forcing_text: Error reading from data file.", LOG_LEVEL_WARNING)
           ierr = 2
           return
        endif
@@ -189,7 +189,7 @@ contains
           before = fdata ( readdate, read_windspeed, read_winddir, read_temperature, read_humidity, read_pressure, read_swrad, read_lwrad, read_rain )
           cycle READLOOP
        else
-          call write_log("read_forcing_text: Logic problem. STOPPING..", "FATAL")
+          call write_log("read_forcing_text: Logic problem. STOPPING..", LOG_LEVEL_FATAL)
           stop "Logic problem"
        endif
     enddo READLOOP
@@ -232,7 +232,7 @@ contains
           print*,' after%readdate = ', after%readdate
           print*, 'idts2 = ', idts2
 
-          call write_log("IDTS PROBLEM: idts2 = "//itoa(idts2)//" forcing_timestep = " //itoa(forcing_timestep) //" STOPPING..", "FATAL")
+          call write_log("IDTS PROBLEM: idts2 = "//itoa(idts2)//" forcing_timestep = " //itoa(forcing_timestep) //" STOPPING..", LOG_LEVEL_FATAL)
           stop "IDTS PROBLEM"
        endif
 
@@ -258,7 +258,7 @@ contains
 
     else
        print*, 'nowdate = "'//nowdate//'"'
-       call write_log('nowdate = "'//nowdate//'". Problem in the logic of read_forcing_text. STOPPING..', 'FATAL')
+       call write_log('nowdate = "'//nowdate//'". Problem in the logic of read_forcing_text. STOPPING..', LOG_LEVEL_FATAL)
        stop "Problem in the logic of read_forcing_text."
     endif
 
