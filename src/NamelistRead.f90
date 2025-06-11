@@ -232,7 +232,7 @@ contains
       open(30, file=namelist_file, form="formatted", status='old', iostat=ierr)
       if(ierr /= 0) then
       write(*,'(A)') 'ERROR: user specified namelist file not found: '//trim(namelist_file)
-      call write_log('ERROR: user specified namelist file not found: '//trim(namelist_file)// '...STOPPING..', "FATAL")
+      call write_log('ERROR: user specified namelist file not found: '//trim(namelist_file)// '...STOPPING..', LOG_LEVEL_FATAL)
       stop
     end if
       !print*, 'Reading namelist: ', trim(namelist_file)
@@ -240,7 +240,7 @@ contains
       open(30, file='./namelist.input', form="formatted", status='old', iostat=ierr)
       if(ierr /= 0) then
         write(*,'(A)') 'ERROR: default namelist file not found: ./namelist.input' 
-        call write_log('ERROR: default namelist file not found: ./namelist.input, STOPPING', 'FATAL')
+        call write_log('ERROR: default namelist file not found: ./namelist.input, STOPPING', LOG_LEVEL_FATAL)
         stop
       end if
       !print*, 'No namelist filename supplied -- attempting to read namelist.input (default)'
@@ -303,7 +303,7 @@ contains
         zsoil(iz) = -1. * sum(dzsnso(1:iz))      
       end do
     else 
-      call write_log('ERROR: required entry dzsnso not found in namelist. STOPPING..', 'FATAL')      
+      call write_log('ERROR: required entry dzsnso not found in namelist. STOPPING..', LOG_LEVEL_FATAL)      
       write(*,'(A)') 'ERROR: required entry dzsnso not found in namelist'; stop
     end if 
     
@@ -371,7 +371,7 @@ contains
   SUBROUTINE handle_err(message)
     implicit none
     character(*),intent(in) :: message         ! error message
-      call write_log(trim(message)// ' ..STOPPING', "FATAL")
+      call write_log(trim(message)// ' ..STOPPING', LOG_LEVEL_FATAL)
       write(*,'(A)') 'FATAL '//trim(message)
       call flush(6)
       stop
