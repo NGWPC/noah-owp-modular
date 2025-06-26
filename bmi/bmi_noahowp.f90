@@ -280,10 +280,12 @@ contains
     integer :: bmi_status
     double precision :: n_steps_real
     integer :: n_steps, i, s
+    character(50) :: str_real
 
     if (time < this%model%domain%time_dbl) then
        bmi_status = BMI_FAILURE
-       call write_log("bmi:noahowp_update_until: time " // r8toa(time) //" is less than time_dbl", LOG_LEVEL_FATAL)
+       write(str_real, '(f20.10)' ) time
+       call write_log("bmi:noahowp_update_until: time " // trim(str_real) //" is less than time_dbl", LOG_LEVEL_FATAL)
        return
     end if
 
