@@ -89,7 +89,6 @@ contains
       if (len_trim(str) == 0) exit
       nargs = nargs + 1
       if(nargs .gt. size(args)) then
-        print *,'Number of predictors larger than expected, check nPredict'
         call write_log("Number of predictors larger than expected, check nPredict", LOG_LEVEL_FATAL)
         stop
       end if
@@ -886,9 +885,7 @@ contains
     !call write_log(date// "," //itoa(year)// "," //itoa(month)// "," //itoa(day)// "," //itoa(hour)// "," //itoa(min)// ","//itoa(sec)//"," //itoa(error), LOG_LEVEL_INFO)
     if (error /= 0) then
       date_to_unix = -9999.99
-      print*, 'error in date_to_unix -- date, year, month, day, hour, min, sec, error:'
-      print*, date, year, month, day, hour, min, sec, error
-      call write_log('error in date_to_unix -- date, year, month, day, hour, min, sec, error:', LOG_LEVEL_WARNING)
+      call write_log('Error in date_to_unix -- date, year, month, day, hour, min, sec, error:', LOG_LEVEL_FATAL)
       call write_log(date// "," //itoa(year)// "," //itoa(month)// "," //itoa(day)// "," //itoa(hour)// "," //itoa(min)// "," //itoa(sec)//"," //itoa(error), LOG_LEVEL_WARNING)
       call write_log("STOPPING ..", LOG_LEVEL_FATAL)
       stop !return
@@ -975,14 +972,20 @@ contains
     !local
     integer                           :: t, ntimes
     real*8                            :: utime
+    character(50)                     :: str_mod
+    character(50)                     :: str_end
+    character(50)                     :: str_start
+    character(50)                     :: str_dt
 
     if(abs(mod(end_datetime - start_datetime, dt)) > 1e-5) then
-      print*, 'start and end datetimes are not an even multiple of dt -- check dates in namelist' 
-      print*, 'end_datetime, start_datetime, dt, mod:', end_datetime, start_datetime, dt, mod(end_datetime-start_datetime, dt) 
-      call write_log('start and end datetimes are not an even multiple of dt -- check dates in namelist', LOG_LEVEL_FATAL)
-      call write_log('end_datetime, start_datetime, dt, mod:' // r8toa(end_datetime)// ','//r8toa(start_datetime)//","//rtoa(dt)//"," // r8toa(mod(end_datetime-start_datetime, dt)), LOG_LEVEL_FATAL)
-      call write_log("STOPPING ..", LOG_LEVEL_FATAL)
-      stop 
+        write(str_mod, '(f20.10)' ) mod(end_datetime-start_datetime, dt) 
+        write(str_end, '(f20.10)' ) end_datetime
+        write(str_start, '(f20.10)' ) start_datetime
+        write(str_dt, '(f20.10)' ) dt
+
+        call write_log('start and end datetimes are not an even multiple of dt -- check dates in namelist', LOG_LEVEL_FATAL)
+        call write_log('end_datetime, start_datetime, dt, mod:'//trim(str_end)//trim(str_start)//trim(str_dt)//trim(str_mod), LOG_LEVEL_FATAL)
+        stop 
     end if
 
     ntimes = int((end_datetime - start_datetime)/dt) + 1

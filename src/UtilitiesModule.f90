@@ -609,14 +609,12 @@ contains
 
     ! Check that the month of NDATE makes sense.
     if ((monew > 12).or.(monew < 1)) then
-       print*, 'GETH_IDTS:  Month of NDATE = ', monew
        call write_log("GETH_IDTS:  Invalid Month of NDATE = " //itoa(monew), LOG_LEVEL_WARNING)
        npass = .false.
     end if
 
     ! Check that the month of ODATE makes sense.
     if ((moold > 12).or.(moold < 1)) then
-       print*, 'GETH_IDTS:  Month of ODATE = ', moold
        call write_log("GETH_IDTS:  Invalid Month of ODATE = " //itoa(moold), LOG_LEVEL_WARNING)
        opass = .false.
     end if
@@ -625,14 +623,12 @@ contains
     if (monew /= 2) then
        ! ...... For all months but February
        if ((dynew > mday(monew)).or.(dynew < 1)) then
-          print*, 'GETH_IDTS:  Day of NDATE = ', dynew
           call write_log("GETH_IDTS:  Invalid Day of NDATE = " //itoa(dynew), LOG_LEVEL_WARNING)
           npass = .false.
        end if
     else if (monew == 2) then
        ! ...... For February
        if ((dynew > nfeb(yrnew)).or.(dynew < 1)) then
-          print*, 'GETH_IDTS:  Day of NDATE = ', dynew
           call write_log("GETH_IDTS:  Invalid Day of NDATE for February = " //itoa(dynew), LOG_LEVEL_WARNING)
           npass = .false.
        end if
@@ -642,14 +638,12 @@ contains
     if (moold /= 2) then
        ! ...... For all months but February
        if ((dyold > mday(moold)).or.(dyold < 1)) then
-          print*, 'GETH_IDTS:  Day of ODATE = ', dyold
           call write_log("GETH_IDTS:  Invalid Day of ODATE = " //itoa(dyold), LOG_LEVEL_WARNING)
           opass = .false.
        end if
     else if (moold == 2) then
        ! ....... For February
        if ((dyold > nfeb(yrold)).or.(dyold < 1)) then
-          print*, 'GETH_IDTS:  Day of ODATE = ', dyold
           call write_log("GETH_IDTS:  Invalid Day of ODATE for February = " //itoa(dyold), LOG_LEVEL_WARNING)
           opass = .false.
        end if
@@ -657,54 +651,46 @@ contains
 
     ! Check that the hour of NDATE makes sense.
     if ((hrnew > 23).or.(hrnew < 0)) then
-       print*, 'GETH_IDTS:  Hour of NDATE = ', hrnew
        call write_log("GETH_IDTS:  Invalid Hour of NDATE = " //itoa(hrnew), LOG_LEVEL_WARNING)
        npass = .false.
     end if
 
     ! Check that the hour of ODATE makes sense.
     if ((hrold > 23).or.(hrold < 0)) then
-       print*, 'GETH_IDTS:  Hour of ODATE = ', hrold
        call write_log("GETH_IDTS:  Invalid Hour of ODATE = " //itoa(hrold), LOG_LEVEL_WARNING)
        opass = .false.
     end if
 
     ! Check that the minute of NDATE makes sense.
     if ((minew > 59).or.(minew < 0)) then
-       print*, 'GETH_IDTS:  Minute of NDATE = ', minew
        call write_log("GETH_IDTS:  Invalid Minute of NDATE = " //itoa(minew), LOG_LEVEL_WARNING)
        npass = .false.
     end if
 
     ! Check that the minute of ODATE makes sense.
     if ((miold > 59).or.(miold < 0)) then
-       print*, 'GETH_IDTS:  Minute of ODATE = ', miold
        call write_log("GETH_IDTS:  Invalid Minute of ODATE = " //itoa(miold), LOG_LEVEL_WARNING)
        opass = .false.
     end if
 
     ! Check that the second of NDATE makes sense.
     if ((scnew > 59).or.(scnew < 0)) then
-       print*, 'GETH_IDTS:  SECOND of NDATE = ', scnew
        call write_log("GETH_IDTS:  Invalid Second of NDATE = " //itoa(scnew), LOG_LEVEL_WARNING)
        npass = .false.
     end if
 
     ! Check that the second of ODATE makes sense.
     if ((scold > 59).or.(scold < 0)) then
-       print*, 'GETH_IDTS:  Second of ODATE = ', scold
        call write_log("GETH_IDTS:  Invalid Second of ODATE = " //itoa(scold), LOG_LEVEL_WARNING)
        opass = .false.
     end if
 
     if (.not. npass) then
-       print*, 'Screwy NDATE: ', ndate(1:nlen)
        call write_log("Screwy NDATE = " //ndate(1:nlen)//" ABORTING..", LOG_LEVEL_FATAL)
        call abort()
     end if
 
     if (.not. opass) then
-       print*, 'Screwy ODATE: ', odate(1:olen)
        call write_log("Screwy ODATE = " //odate(1:olen)//" ABORTING..", LOG_LEVEL_FATAL)
        call abort()
     end if
