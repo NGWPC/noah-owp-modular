@@ -242,8 +242,9 @@ contains
       error = 1
     end if
   end subroutine check  
-  
-#endif     ! end of block to remove output if NGEN_OUTPUT_ACTIVE directive is True
+
+! end of block to remove output if NGEN_OUTPUT_ACTIVE directive is True
+#endif 
 
 end module OutputModule
 
