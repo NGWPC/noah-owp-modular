@@ -620,6 +620,9 @@ contains
     character (len=*), intent(in) :: name
     character (len=*), intent(out) :: type
     integer :: bmi_status
+    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "uint64" !pads spaces upto 2048.
+    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "character" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
 
     select case(name)
     case('ACSNOM', 'AXAJ', 'BEXP', 'BXAJ', 'CMC', 'CWP', 'DKSAT',          &
@@ -633,6 +636,15 @@ contains
        bmi_status = BMI_SUCCESS
     case('ISNOW')
        type = "integer"
+       bmi_status = BMI_SUCCESS
+    case ('serialization_create')
+       type = ser_create
+       bmi_status = BMI_SUCCESS
+    case ('serialization_state')
+       type = ser_state
+       bmi_status = BMI_SUCCESS
+    case ('serialization_free')
+       type = ser_free
        bmi_status = BMI_SUCCESS
     case default
        type = "-"
@@ -875,20 +887,37 @@ contains
     integer :: bmi_status
     integer :: s1, s2, s3, grid, grid_size, item_size
 
-    s1 = this%get_var_grid(name, grid)
-    s2 = this%get_grid_size(grid, grid_size)
-    s3 = this%get_var_itemsize(name, item_size)
-
-    if (grid .eq. 0) then
-       nbytes = item_size
-       bmi_status = BMI_SUCCESS
-    else if ((s1 == BMI_SUCCESS).and.(s2 == BMI_SUCCESS).and.(s3 == BMI_SUCCESS)) then
-       nbytes = item_size * grid_size
-       bmi_status = BMI_SUCCESS
+    if (name == "serialization_create") then
+      nbytes = storage_size(0_int64)/8 !returns size in bits. So, divide by 8 for bytes.
+      bmi_status = BMI_SUCCESS
+    else if (name == "serialization_state") then
+      if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
+         nbytes = -1
+         call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+         bmi_status = BMI_FAILURE
+      else
+         nbytes = size(this%model%serialization_buffer)
+         bmi_status = BMI_SUCCESS
+      end if
+    else if (name == "serialization_free") then 
+      nbytes = storage_size(0_int32)/8 !returns size in bits. So, divide by 8 for bytes.
+      bmi_status = BMI_SUCCESS
     else
-       nbytes = -1
-       bmi_status = BMI_FAILURE
-       call write_log("bmi:noahowp_var_nbytes: invalid var " // name // ". nbytes value set to '-1'", LOG_LEVEL_WARNING)
+      s1 = this%get_var_grid(name, grid)
+      s2 = this%get_grid_size(grid, grid_size)
+      s3 = this%get_var_itemsize(name, item_size)
+
+      if (grid .eq. 0) then
+        nbytes = item_size
+        bmi_status = BMI_SUCCESS
+      else if ((s1 == BMI_SUCCESS).and.(s2 == BMI_SUCCESS).and.(s3 == BMI_SUCCESS)) then
+        nbytes = item_size * grid_size
+        bmi_status = BMI_SUCCESS
+      else
+        nbytes = -1
+        bmi_status = BMI_FAILURE
+        call write_log("bmi:noahowp_var_nbytes: invalid var " // name // ". nbytes value set to '-1'", LOG_LEVEL_WARNING)
+      end if
     end if
   end function noahowp_var_nbytes
 
@@ -921,6 +950,14 @@ contains
     case("ISNOW")
        dest(:) = this%model%water%ISNOW
        bmi_status = BMI_SUCCESS
+    case("serialization_state")
+        if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
+            call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+            bmi_status = BMI_FAILURE
+        else
+            dest = size(this%model%serialization_buffer)
+            bmi_status = BMI_SUCCESS
+         end if
     case default
        dest(:) = -1
        bmi_status = BMI_FAILURE
@@ -1237,6 +1274,7 @@ contains
     character (len=*), intent(in) :: name
     integer, intent(in) :: src(:)
     integer :: bmi_status
+    integer(kind=int64) :: exec_status
 
     !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR INTEGER VARS =================
 
@@ -1244,7 +1282,22 @@ contains
 !     case("model__identification_number")
 !        this%model%id = src(1)
 !        bmi_status = BMI_SUCCESS
-    case default
+      case("serialization_create")
+         !call new_serialization_request(this%model, exec_status)
+         if (exec_status == 0) then
+            bmi_status = BMI_SUCCESS
+         else
+            bmi_status = BMI_FAILURE 
+         end if
+      case("serialization_state")
+         call deserialize_mp_buffer(this%model)
+         bmi_status = BMI_SUCCESS
+      case("serialization_free")
+         if(allocated(this%model%serialization_buffer)) then
+            deallocate(this%model%serialization_buffer)
+            bmi_status = BMI_SUCCESS
+         end if
+      case default
        bmi_status = BMI_FAILURE
        call write_log("bmi:noahowp_set_int: invalid var " // name, LOG_LEVEL_WARNING)
     end select
