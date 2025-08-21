@@ -18,6 +18,9 @@ module RunModule
   use EnergyModule
   use WaterModule
   use DateTimeUtilsModule
+  use noahowp_log_module
+  use messagepack
+  use iso_fortran_env
   
   implicit none
   type :: noahowp_type
@@ -29,6 +32,7 @@ module RunModule
     type(water_type)      :: water
     type(forcing_type)    :: forcing
     type(energy_type)     :: energy
+    byte, dimension(:), allocatable :: serialization_buffer
   end type noahowp_type
 contains
 
@@ -237,7 +241,12 @@ contains
 #ifndef NGEN_OUTPUT_ACTIVE
       call finalize_output()
 #endif
-  
+    !Free up serialization buffer memory
+    if(allocated(model%serialization_buffer)) then
+      deallocate(model%serialization_buffer)
+    end if
+
+
   END SUBROUTINE cleanup
 
   !== Move the model ahead one time step ================================================================
@@ -326,5 +335,47 @@ contains
     
     end associate ! terminate associate block
   END SUBROUTINE solve_noahowp
+
+  SUBROUTINE new_serialization_request (model, exec_status)
+    type(sac_type), intent(inout) :: model
+
+    integer(kind=int64) :: nh !counter for HRUs
+    class(msgpack), allocatable :: mp
+    class(mp_arr_type), allocatable :: mp_sub_arr
+    class(mp_arr_type), allocatable :: mp_arr
+    byte, dimension(:), allocatable :: serialization_buffer
+    integerkind=int64, intent(out) :: exec_status
+
+    mp = msgpack()
+    mp_arr = mp_arr_type(model%runinfo%n_hrus)
+    do nh=1, model%runinfo%n_hrus
+        mp_sub_arr = mp_arr_type(11)
+        mp_sub_arr%values(1)%obj = mp_int_type(model%runinfo%curr_yr) !curr_yr
+        mp_sub_arr%values(2)%obj = mp_int_type(model%runinfo%curr_mo) !curr_mo
+        mp_sub_arr%values(3)%obj = mp_int_type(model%runinfo%curr_dy) !curr_dy
+        mp_sub_arr%values(4)%obj = mp_int_type(model%runinfo%curr_hr) !curr_hr
+        mp_sub_arr%values(5)%obj = mp_int_type(nh) !hru number
+        mp_sub_arr%values(6)%obj = mp_float_type(model%modelvar%uztwc(nh)) !uztwc
+        mp_sub_arr%values(7)%obj = mp_float_type(model%modelvar%uzfwc(nh)) !uzfwc
+        mp_sub_arr%values(8)%obj = mp_float_type(model%modelvar%lztwc(nh)) !lztwc
+        mp_sub_arr%values(9)%obj = mp_float_type(model%modelvar%lzfsc(nh)) !lzfsc
+        mp_sub_arr%values(10)%obj = mp_float_type(model%modelvar%lzfpc(nh)) !lzfpc
+        mp_sub_arr%values(11)%obj = mp_float_type(model%modelvar%adimc(nh)) !adimc
+
+        mp_arr%values(nh)%obj = mp_sub_arr
+    end do
+
+    ! pack the data
+    call mp%pack_alloc(mp_arr, serialization_buffer)
+    if (mp%failed()) then
+        call write_log("Serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+        exec_status = 1
+    else
+        exec_status = 0
+        model%serialization_buffer = serialization_buffer
+        call write_log("Serialization using messagepack successful!", LOG_LEVEL_INFO)
+    end if
+  END SUBROUTINE new_serialization_request
+
 
 end module RunModule
