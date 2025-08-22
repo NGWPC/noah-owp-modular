@@ -19,6 +19,7 @@ module RunModule
   use WaterModule
   use DateTimeUtilsModule
   use noahowp_log_module
+  use StateSerialization
   use messagepack
   use iso_fortran_env
   
@@ -337,7 +338,7 @@ contains
   END SUBROUTINE solve_noahowp
 
   SUBROUTINE new_serialization_request (model, exec_status)
-    type(sac_type), intent(inout) :: model
+    type(noahowp_type), intent(inout) :: model
 
     integer(kind=int64) :: nh !counter for HRUs
     class(msgpack), allocatable :: mp
@@ -347,23 +348,27 @@ contains
     integerkind=int64, intent(out) :: exec_status
 
     mp = msgpack()
-    mp_arr = mp_arr_type(model%runinfo%n_hrus)
-    do nh=1, model%runinfo%n_hrus
-        mp_sub_arr = mp_arr_type(11)
-        mp_sub_arr%values(1)%obj = mp_int_type(model%runinfo%curr_yr) !curr_yr
-        mp_sub_arr%values(2)%obj = mp_int_type(model%runinfo%curr_mo) !curr_mo
-        mp_sub_arr%values(3)%obj = mp_int_type(model%runinfo%curr_dy) !curr_dy
-        mp_sub_arr%values(4)%obj = mp_int_type(model%runinfo%curr_hr) !curr_hr
-        mp_sub_arr%values(5)%obj = mp_int_type(nh) !hru number
-        mp_sub_arr%values(6)%obj = mp_float_type(model%modelvar%uztwc(nh)) !uztwc
-        mp_sub_arr%values(7)%obj = mp_float_type(model%modelvar%uzfwc(nh)) !uzfwc
-        mp_sub_arr%values(8)%obj = mp_float_type(model%modelvar%lztwc(nh)) !lztwc
-        mp_sub_arr%values(9)%obj = mp_float_type(model%modelvar%lzfsc(nh)) !lzfsc
-        mp_sub_arr%values(10)%obj = mp_float_type(model%modelvar%lzfpc(nh)) !lzfpc
-        mp_sub_arr%values(11)%obj = mp_float_type(model%modelvar%adimc(nh)) !adimc
+    mp_arr = mp_arr_type(5) !forcing, domain, energy,water, parameters
 
-        mp_arr%values(nh)%obj = mp_sub_arr
-    end do
+    call forcing_serialization(model%forcing,mp_sub_arr)
+    mp_arr%values(1)%obj = mp_sub_arr !forcing
+    deallocate(mp_sub_arr)
+
+    call energy_serialization(model%energy,mp_sub_arr)
+    mp_arr%values(2)%obj = mp_sub_arr !energy
+    deallocate(mp_sub_arr)
+
+    call domain_serialization(model%domain,mp_sub_arr)
+    mp_arr%values(3)%obj = mp_sub_arr !domain
+    deallocate(mp_sub_arr)
+
+    call water_serialization(model%water,mp_sub_arr)
+    mp_arr%values(4)%obj = mp_sub_arr !water
+    deallocate(mp_sub_arr)
+
+    call parameters_serialization(model%parameters,mp_sub_arr)
+    mp_arr%values(5)%obj = mp_sub_arr !parameters
+    deallocate(mp_sub_arr)
 
     ! pack the data
     call mp%pack_alloc(mp_arr, serialization_buffer)
