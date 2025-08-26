@@ -382,5 +382,40 @@ contains
     end if
   END SUBROUTINE new_serialization_request
 
+  SUBROUTINE deserialize_mp_buffer (model)
+    type(noahowp_type), intent(inout) :: model
+    class(mp_value_type), allocatable :: mpv
+    class(msgpack), allocatable :: mp
+    class(mp_arr_type), allocatable :: arr
+    logical :: error, status
+    integer(kind=int64) :: index
+    
+    mp = msgpack()
+
+    index = 1
+    do while(mp%is_available(model%serialization_buffer(index:)))
+      call mp%unpack_buf(model%serialization_buffer(index:), mpv, numbytes)   
+      if(mp%failed()) then
+        call write_log("De-serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+      else
+        call get_arr_ref(mpv, arr, status)
+        if(status) then
+          call forcing_deserialization (arr, model%forcing)
+          call energy_deserialization (arr, model%energy)
+          call domain_deserialization (arr, model%domain)
+          call water_deserialization (arr, model%water)
+          call parameters_deserialization (arr, model%parameters)
+        else
+          call write_log("Serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+        end if
+      end if 
+      deallocate (mpv)
+      index = index + numbytes
+      if(index > size(model%serialization_buffer)) then
+        exit
+      end if
+    end do
+
+  END SUBROUTINE deserialize_mp_buffer
 
 end module RunModule

@@ -35,14 +35,90 @@ SUBROUTINE forcing_serialization (forcing, mp_arr)
     mp_arr%values(14)%obj = mp_float_type(forcing%O2PP) !O2PP
     mp_arr%values(15)%obj = mp_float_type(forcing%CO2PP) !CO2PP
     mp_arr%values(16)%obj = mp_float_type(forcing%SWDOWN) !SWDOWN, out
-    mp_arr%values(17)%obj = mp_float_type(forcing%SOLAD) !SOLAD
-    mp_arr%values(18)%obj = mp_float_type(forcing%SOLAI) !SOLAI
+    mp_arr%values(17)%obj = mp_arr_type(forcing%SOLAD(1:2)) !SOLAD
+    mp_arr%values(18)%obj = mp_arr_type(forcing%SOLAI(1:2)) !SOLAI
     mp_arr%values(19)%obj = mp_float_type(forcing%PRCP) !PRCP
     mp_arr%values(20)%obj = mp_float_type(forcing%PRCPNONC) !PRCPNONC
     mp_arr%values(21)%obj = mp_float_type(mforcing%FPICE) !FPICE, out 
     mp_arr%values(22)%obj = mp_float_type(forcing%UR) !UR, out
 
 END SUBROUTINE forcing_serialization
+
+SUBROUTINE forcing_deserialization (mp_arr, forcing)
+    class(mp_arr_type), allocatable, intent(in) :: mp_arr
+    type(ForcingType), intent(inout) :: forcing
+    real(kind=real64) :: deserialized_val
+    class(mp_arr_type), allocatable :: mp_sub_arr
+    logical :: status
+    integer(kind=int64) :: index, sub_index 
+
+    do index=1, size(mp_arr)
+        if (index = 8) then
+            call get_int(arr%values(index)%obj, deserialized_val, status)
+        else if (index = 17 .OR. index = 18) then
+            if (is_arr(arr%values(index)%obj)) then
+                mp_sub_arr = arr%values(index)%obj
+            else
+                !write to log file
+            end if
+        else    
+            call get_real(arr%values(index)%obj, deserialized_val, status)
+        end if
+        select case(index)
+            case(1)
+                forcing%UU = deserialized_val
+            case(2)
+                forcing%VV = deserialized_val
+            case(3)
+                forcing%SFCTMP = deserialized_val
+            case(4)
+                forcing%Q2 = deserialized_val
+            case(5)
+                forcing%SFCPRS = deserialized_val
+            case(6)
+                forcing%SOLDN = deserialized_val
+            case(7)
+                forcing%LWDN = deserialized_val
+            case(8)
+                forcing%YEARLEN = deserialized_val
+            case(9)
+                forcing%JULIAN = deserialized_val
+            case(10)
+                forcing%THAIR = deserialized_val
+            case(11)
+                mforcing%QAIR = deserialized_val
+            case(12)
+                forcing%EAIR = deserialized_val
+            case(13)
+                forcing%RHOAIR = deserialized_val
+            case(14)
+                forcing%O2PP = deserialized_val
+            case(15)
+                forcing%CO2PP = deserialized_val
+            case(16)
+                forcing%SWDOWN = deserialized_val
+            case(17)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    forcing%SOLAD(sub_index) = deserialized_val
+                end do
+            case(18)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    forcing%SOLAI(sub_index) = deserialized_val
+                end do
+            case(19)
+                forcing%PRCP = deserialized_val
+            case(20)
+                forcing%PRCPNONC = deserialized_val
+            case(21)
+                forcing%FPICE = deserialized_val
+            case(22)
+                forcing%UR = deserialized_val
+        end select
+    end do
+END SUBROUTINE forcing_deserialization
+
 
 SUBROUTINE domain_serialization (domain, mp_arr)
     type(DomainType), intent(in) :: domain
@@ -54,10 +130,51 @@ SUBROUTINE domain_serialization (domain, mp_arr)
     mp_arr%values(3)%obj = mp_float_type(domain%time_dbl) !time_dbl
     mp_arr%values(4)%obj = mp_float_type(domain%nowdate) !nowdate
 
-    mp_arr%values(5)%obj = mp_arr_type(domain%DZSNSO) !DZSNSO have to fix indices using levels%soil
-    mp_arr%values(6)%obj = mp_arr_type(domain%ZSNSO) !ZSNSO have to fix indices using levels%soil
+    mp_arr%values(5)%obj = mp_arr_type(domain%DZSNSO)
+    mp_arr%values(6)%obj = mp_arr_type(domain%ZSNSO)
 
 END SUBROUTINE domain_serialization 
+
+SUBROUTINE domain_deserialization (mp_arr, domain)
+    class(mp_arr_type), allocatable, intent(in) :: mp_arr
+    type(DomainType), intent(inout) :: domain
+    real(kind=real64) :: deserialized_val
+    class(mp_arr_type), allocatable :: mp_sub_arr
+    logical :: status
+    integer(kind=int64) :: index, sub_index 
+
+    do index=1, size(mp_arr)
+        if (index = 5 .OR. index = 6) then
+            if (is_arr(arr%values(index)%obj)) then
+                mp_sub_arr = arr%values(index)%obj
+            else
+                !write to log file
+            end if
+        else    
+            call get_real(arr%values(index)%obj, deserialized_val, status)
+        end if
+        select case(index)
+            case(1)
+                domain%curr_datetime = deserialized_val
+            case(2)
+                domain%ITIME = deserialized_val
+            case(3)
+                domain%time_dbl = deserialized_val
+            case(4)
+                domain%nowdate = deserialized_val
+            case(5)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    domain%DZSNSO(sub_index) = deserialized_val
+                end do
+            case(6)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    domain%ZSNSO(sub_index) = deserialized_val
+                end do
+        end select
+    end do
+END SUBROUTINE domain_deserialization
 
 SUBROUTINE energy_serialization (energy, mp_arr)
     type(EnergyType), intent(in) :: energy
@@ -192,6 +309,347 @@ SUBROUTINE energy_serialization (energy, mp_arr)
 
 END SUBROUTINE energy_serialization
 
+SUBROUTINE energy_deserialization (mp_arr, energy)
+    class(mp_arr_type), allocatable, intent(in) :: mp_arr
+    type(EnergyType), intent(inout) :: energy
+    real(kind=real64) :: deserialized_val
+    class(mp_arr_type), allocatable :: mp_sub_arr
+    logical :: status
+    integer(kind=int64) :: index, sub_index 
+
+    do index=1, size(mp_arr)
+        if ((index >= 69 .AND. index <= 71) .OR. (index >= 80 .AND. index <= 92) .OR. (index >= 98 .AND. index <= 102) .OR. (index = 123) .OR. (index = 125)) then
+            if (is_arr(arr%values(index)%obj)) then
+                mp_sub_arr = arr%values(index)%obj
+            else
+                !write to log file
+            end if
+        else    
+            call get_real(arr%values(index)%obj, deserialized_val, status)
+        end if
+        select case(index)
+            case(1)
+                energy%cosz = deserialized_val
+            case(2)
+                energy%cosz_horiz = deserialized_val
+            case(3)
+                energy%TAH = deserialized_val
+            case(4)
+                energy%EAH = deserialized_val
+            case(5)
+                energy%IGS = deserialized_val
+            case(6)
+                energy%TAUXV = deserialized_val
+            case(7)
+                energy%TAUYV = deserialized_val
+            case(8)
+                energy%IRC = deserialized_val
+            case(9)
+                energy%SHC = deserialized_val
+            case(10)
+                energy%IRG = deserialized_val
+            case(11)
+                energy%SHG = deserialized_val
+            case(12)
+                energy%EVG = deserialized_val
+            case(13)
+                energy%EVC = deserialized_val
+            case(14)
+                energy%TR = deserialized_val
+            case(15)
+                energy%PSNSUN = deserialized_val
+            case(17)
+                energy%PSNSHA = deserialized_val
+            case(18)
+                energy%T2MV = deserialized_val
+            case(19)
+                energy%Q2V = deserialized_val
+            case(20)
+                energy%CHV = deserialized_val
+            case(21)
+                energy%CHLEAF = deserialized_val
+            case(22)
+                energy%CHUC = deserialized_val
+            case(23)
+                energy%CHV2 = deserialized_val
+            case(24)
+                energy%RB = deserialized_val
+            case(25)
+                energy%Z0MG = deserialized_val
+            case(26)
+                energy%Z0M = deserialized_val
+            case(27)
+                energy%ZPD = deserialized_val
+            case(28)
+                energy%ZLVL = deserialized_val
+            case(29)
+                energy%EMG = deserialized_val
+            case(30)
+                energy%RSURF = deserialized_val
+            case(31)
+                energy%RHSUR = deserialized_val
+            case(32)
+                energy%LATHEAV = deserialized_val
+            case(33)
+                energy%frozen_canopy = deserialized_val
+            case(34)
+                energy%GAMMAV = deserialized_val
+            case(35)
+                energy%LATHEAG = deserialized_val
+            case(36)
+                energy%frozen_ground = deserialized_val
+            case(37)
+                energy%GAMMAG = deserialized_val
+            case(38)
+                energy%TGB = deserialized_val
+            case(39)
+                energy%CMB = deserialized_val
+            case(40)
+                energy%CHB = deserialized_val
+            case(41)
+                energy%Z0WRF = deserialized_val
+            case(42)
+                energy%RSSUN = deserialized_val
+            case(43)
+                energy%T2M = deserialized_val
+            case(44)
+                energy%Q1 = deserialized_val
+            case(45)
+                energy%Q2E = deserialized_val
+            case(46)
+                energy%FGEV = deserialized_val
+            case(47)
+                energy%TS = deserialized_val
+            case(48)
+                energy%TAUY = deserialized_val
+            case(49)
+                energy%GH = deserialized_val
+            case(50)
+                energy%SSOIL = deserialized_val
+            case(51)
+                energy%TGV = deserialized_val
+            case(52)
+                energy%FCEV = deserialized_val
+            case(53)
+                energy%CM = deserialized_val
+            case(54)
+                energy%FIRA = deserialized_val
+            case(55)
+                energy%RSSHA = deserialized_val
+            case(56)
+                energy%TG = deserialized_val
+            case(57)
+                energy%CH = deserialized_val
+            case(58)
+                energy%FCTR = deserialized_val
+            case(59)
+                energy%PAH = deserialized_val
+            case(60)
+                energy%TAUX = deserialized_val
+            case(61)
+                energy%FSH = deserialized_val
+            case(62)
+                energy%EMISSI = deserialized_val
+            case(63)
+                energy%TRAD = deserialized_val
+            case(64)
+                energy%APAR = deserialized_val
+            case(65)
+                energy%PSN = deserialized_val
+            case(66)
+                energy%STC = deserialized_val
+            case(67)
+                energy%LH = deserialized_val
+			case(68)
+                energy%TGS = deserialized_val
+            case(69)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%HCPCT(sub_index) = deserialized_val
+                end do
+            case(70)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%DF(sub_index) = deserialized_val
+                end do
+            case(71)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FACT(sub_index) = deserialized_val
+                end do
+            case(72)
+                energy%PAHV = deserialized_val
+            case(73)
+                energy%PAHV = deserialized_val
+            case(74)
+                energy%PAHB = deserialized_val
+            case(75)
+                energy%FSHA = deserialized_val
+            case(76)
+                energy%LAISUN = deserialized_val
+            case(77)
+                energy%LAISHA = deserialized_val
+            case(78)
+                energy%BGAP = deserialized_val
+            case(79)
+                energy%WGAP = deserialized_val
+            case(80)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBD(sub_index) = deserialized_val
+                end do
+            case(81)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBI(sub_index) = deserialized_val
+                end do
+            case(82)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBGRD(sub_index) = deserialized_val
+                end do
+            case(83)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBGRI(sub_index) = deserialized_val
+                end do
+            case(84)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBSND(sub_index) = deserialized_val
+                end do
+            case(85)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBSNI(sub_index) = deserialized_val
+                end do
+            case(86)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FABD(sub_index) = deserialized_val
+                end do
+            case(87)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FABI(sub_index) = deserialized_val
+                end do
+            case(88)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTDD(sub_index) = deserialized_val
+                end do
+            case(89)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTID(sub_index) = deserialized_val
+                end do
+            case(90)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTII(sub_index) = deserialized_val
+                end do
+            case(91)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%RHO(sub_index) = deserialized_val
+                end do
+            case(92)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%TAU(sub_index) = deserialized_val
+                end do
+            case(93)
+                energy%FSUN = deserialized_val
+            case(94)
+                energy%TAUSS = deserialized_val
+            case(95)
+                energy%FAGE = deserialized_val
+            case(96)
+                energy%ALB = deserialized_val
+            case(97)
+                energy%ALBOLD = deserialized_val
+            case(98)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTDI(sub_index) = deserialized_val
+                end do
+            case(99)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FREVD(sub_index) = deserialized_val
+                end do
+            case(100)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FREGD(sub_index) = deserialized_val
+                end do
+            case(101)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FREVI(sub_index) = deserialized_val
+                end do
+            case(102)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FREGI(sub_index) = deserialized_val
+                end do
+            case(103)
+                energy%SAG = deserialized_val
+            case(104)
+                energy%SAV = deserialized_val
+            case(105)
+                energy%FSA = deserialized_val
+            case(106)
+                energy%PARSUN = deserialized_val
+            case(107)
+                energy%PARSHA = deserialized_val
+            case(108)
+                energy%FSR = deserialized_val
+            case(109)
+                energy%FSRV = deserialized_val
+            case(110)
+                energy%FSRG = deserialized_val
+            case(111)
+                energy%QSFC = deserialized_val
+            case(112)
+                energy%TV = deserialized_val
+            case(113)
+                energy%CAH2 = deserialized_val
+            case(114)
+                energy%IRB = deserialized_val
+            case(115)
+                energy%SHB = deserialized_val
+            case(116)
+                energy%EVB = deserialized_val
+            case(117)
+                energy%GHB = deserialized_val
+            case(118)
+                energy%TAUXB = deserialized_val
+            case(119)
+                energy%TAUYB = deserialized_val
+            case(120)
+                energy%EHB2 = deserialized_val
+            case(121)
+				energy%T2MB = deserialized_val
+            case(122)
+                energy%Q2B = deserialized_val
+            case(123)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%IMELT(sub_index) = deserialized_val
+                end do
+            case(124)
+                energy%QMELT = deserialized_val
+            case(125)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%SNOWT_AVG(sub_index) = deserialized_val
+                end do
+        end select
+    end do   
+END SUBROUTINE energy_deserialization
+            
+
 SUBROUTINE water_serialization (water, mp_arr)
     type(WaterType), intent(in) :: water
     class(mp_arr_type), allocatable, intent(out) :: mp_arr
@@ -265,8 +723,208 @@ SUBROUTINE water_serialization (water, mp_arr)
     mp_arr%values(66)%obj = mp_float_type(water%ASAT) !ASAT
     mp_arr%values(67)%obj = mp_float_type(water%SMCWTD) !SMCWTD
 
-
 END SUBROUTINE water_serialization
+
+SUBROUTINE water_deserialization (mp_arr, water)
+    class(mp_arr_type), allocatable, intent(in) :: mp_arr
+    type(WaterType), intent(inout) :: water
+    real(kind=real64) :: deserialized_val
+    class(mp_arr_type), allocatable :: mp_sub_arr
+    logical :: status
+    integer(kind=int64) :: index, sub_index 
+
+    do index=1, size(mp_arr)
+        if (index = 53) then
+            call get_int(arr%values(index)%obj, deserialized_val, status)
+        else if ((index >= 21 .AND. index <=27) .OR. (index >= 30 .AND. index <=33) .OR. (index = 44) .OR. (index = 54) .OR. (index = 59)) then
+            if (is_arr(arr%values(index)%obj)) then
+                mp_sub_arr = arr%values(index)%obj
+            else
+                !write to log file
+            end if
+        else    
+            call get_real(arr%values(index)%obj, deserialized_val, status)
+        end if
+        select case(index)
+            case(1)
+                water%FP = deserialized_val
+            case(2)
+                water%RAIN = deserialized_val
+            case(3)
+                water%SNOW = deserialized_val
+            case(4)
+                water%BDFALL = deserialized_val
+            case(5)
+                water%QINTR = deserialized_val
+            case(6)
+                water%QDRIPR = deserialized_val
+            case(7)
+                water%QTHROR = deserialized_val
+            case(8)
+                water%QINTS = deserialized_val
+            case(9)
+                water%QDRIPS = deserialized_val
+            case(10)
+                water%QTHROS = deserialized_val
+            case(11)
+                water%QRAIN = deserialized_val
+            case(12)
+                water%QSNOW = deserialized_val
+            case(13)
+                water%SNOWHIN = deserialized_val
+            case(14)
+                water%CANLIQ = deserialized_val
+            case(15)
+                water%CANICE = deserialized_val
+            case(16)
+                water%FWET = deserialized_val
+            case(17)
+                water%CMC = deserialized_val
+            case(18)
+                water%FSNO = deserialized_val
+            case(19)
+                water%BDSNO = deserialized_val
+            case(20)
+                water%BTRAN = deserialized_val
+            case(21)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%BTRANI(sub_index) = deserialized_val
+                end do
+            case(22)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SNICEV(sub_index) = deserialized_val
+                end do
+            case(23)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%EPORE(sub_index) = deserialized_val
+                end do
+            case(24)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SNLIQV(sub_index) = deserialized_val
+                end do
+            case(25)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%DF(sub_index) = deserialized_val
+                end do
+            case(26)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%HCPCT(sub_index) = deserialized_val
+                end do
+            case(27)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SICE(sub_index) = deserialized_val
+                end do
+            case(28)
+                water%SNEQV = deserialized_val
+            case(29)
+                water%SNOWH = deserialized_val
+            case(30)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SH2O(sub_index) = deserialized_val
+                end do
+            case(31)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SMC(sub_index) = deserialized_val
+                end do
+            case(32)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SNICE(sub_index) = deserialized_val
+                end do
+            case(33)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%SNLIQ(sub_index) = deserialized_val
+                end do
+            case(34)
+                water%PONDING = deserialized_val
+            case(35)
+                water%SNEQVO = deserialized_val
+            case(36)
+                water%QVAP = deserialized_val
+            case(37)
+                water%QDEW = deserialized_val
+            case(38)
+                water%QSNSUB = deserialized_val
+            case(39)
+                water%QSEVA = deserialized_val
+            case(40)
+                water%QSNFRO = deserialized_val
+            case(41)
+                water%QSDEW = deserialized_val
+            case(42)
+                water%QINSUR = deserialized_val
+            case(43)
+                water%ACSNOM = deserialized_val
+            case(44)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%ETRANI(sub_index) = deserialized_val
+                end do
+            case(45)
+                water%RUNSRF = deserialized_val
+            case(46)
+                water%WSLAKE = deserialized_val
+            case(47)
+                water%EVAPOTRANS = deserialized_val
+            case(48)
+                water%ECAN = deserialized_val
+            case(49)
+                water%ETRAN = deserialized_val
+            case(50)
+                water%SNOFLOW = deserialized_val
+            case(51)
+                water%PONDING1 = deserialized_val
+            case(52)
+                water%PONDING2 = deserialized_val
+            case(53)
+                water%ISNOW = deserialized_val
+            case(54)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%DZSNSO(sub_index) = deserialized_val
+                end do
+            case(55)
+                water%QSNBOT = deserialized_val
+            case(56)
+                water%RUNSUB = deserialized_val
+            case(57)
+                water%PDDUM = deserialized_val
+            case(58)
+                water%runsrf_dt = deserialized_val
+            case(59)
+                do sub_index=1, size(mp_sub_arr)
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    water%FCR(sub_index) = deserialized_val
+                end do
+            case(60)
+                water%SICEMAX = deserialized_val
+            case(61)
+                water%FCRMAX = deserialized_val
+            case(62)
+                water%FACC = deserialized_val
+            case(63)
+                water%QDRAIN = deserialized_val
+            case(64)
+                water%DEEPRECH = deserialized_val
+            case(65)
+                water%ZWT = deserialized_val
+            case(66)
+                water%ASAT = deserialized_val
+            case(67)
+                water%SMCWTD = deserialized_val
+        end select
+    end do
+END SUBROUTINE water_deserialization
 
 SUBROUTINE parameters_serialization (parameters, mp_arr)
     type(ParametersType), intent(in) :: parameters
@@ -281,5 +939,28 @@ SUBROUTINE parameters_serialization (parameters, mp_arr)
 
 END SUBROUTINE parameters_serialization
 
+SUBROUTINE parameters_deserialization (mp_arr, parameters)
+    class(mp_arr_type), allocatable, intent(in) :: mp_arr
+    type(ParametersType), intent(inout) :: parameters
+    real(kind=real64) :: deserialized_val
+    logical :: status
+    integer(kind=int64) :: index
+
+    do index=1, size(mp_arr)
+        call get_real(arr%values(index)%obj, deserialized_val, status)
+        select case(index)
+            case(1)
+                parameters%SAI = deserialized_val
+            case(2)
+                parameters%LAI = deserialized_val
+            case(3)
+                parameters%ESAI = deserialized_val
+            case(4)
+                parameters%ELAI = deserialized_val
+            case(5)
+                parameters%FVEG = deserialized_val
+        end select
+    end do
+END SUBROUTINE parameters_deserialization
 
 END Module
