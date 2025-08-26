@@ -345,7 +345,7 @@ contains
     class(mp_arr_type), allocatable :: mp_sub_arr
     class(mp_arr_type), allocatable :: mp_arr
     byte, dimension(:), allocatable :: serialization_buffer
-    integerkind=int64, intent(out) :: exec_status
+    integer(kind=int64), intent(out) :: exec_status
 
     mp = msgpack()
     mp_arr = mp_arr_type(5) !forcing, domain, energy,water, parameters
@@ -388,11 +388,12 @@ contains
     class(msgpack), allocatable :: mp
     class(mp_arr_type), allocatable :: arr
     logical :: error, status
-    integer(kind=int64) :: index
+    integer(kind=int64) :: index, index_pos, numbytes
     
     mp = msgpack()
 
     index = 1
+    index_pos = 1
     do while(mp%is_available(model%serialization_buffer(index:)))
       call mp%unpack_buf(model%serialization_buffer(index:), mpv, numbytes)   
       if(mp%failed()) then
@@ -400,17 +401,25 @@ contains
       else
         call get_arr_ref(mpv, arr, status)
         if(status) then
-          call forcing_deserialization (arr, model%forcing)
-          call energy_deserialization (arr, model%energy)
-          call domain_deserialization (arr, model%domain)
-          call water_deserialization (arr, model%water)
-          call parameters_deserialization (arr, model%parameters)
+          select case(index_pos)
+            case(1)
+              call forcing_deserialization (arr, model%forcing)
+            case(2)  
+              call energy_deserialization (arr, model%energy)
+            case(3)
+              call domain_deserialization (arr, model%domain)
+            case(4)
+              call water_deserialization (arr, model%water)
+            case(5)
+              call parameters_deserialization (arr, model%parameters)
+          end select
         else
           call write_log("Serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
         end if
       end if 
       deallocate (mpv)
       index = index + numbytes
+      index_pos = index_pos + 1
       if(index > size(model%serialization_buffer)) then
         exit
       end if
