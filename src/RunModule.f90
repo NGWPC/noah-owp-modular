@@ -383,7 +383,7 @@ contains
   SUBROUTINE deserialize_mp_buffer (model, serialized_data)
     type(noahowp_type), intent(inout) :: model
     integer , intent(in) :: serialized_data(:)
-    integer(kind=1), allocatable :: serialized_data_1b(:)
+    byte, allocatable :: serialized_data_1b(:)
     class(mp_value_type), allocatable :: mpv
     class(msgpack), allocatable :: mp
     class(mp_arr_type), allocatable :: arr_all
@@ -393,8 +393,7 @@ contains
     
     mp = msgpack()
     !convert integer(4) to integer(1) for messagepack
-    !possible loss of data?
-    serialized_data_1b = int(serialized_data, kind=1)
+    serialized_data_1b = TRANSFER(serialized_data, serialized_data_1b)
     call mp%unpack(serialized_data_1b, mpv)
     if (is_arr(mpv)) then
       call get_arr_ref(mpv, arr_all, status) 
