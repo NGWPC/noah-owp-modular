@@ -339,8 +339,6 @@ contains
 
   SUBROUTINE new_serialization_request (model, exec_status)
     type(noahowp_type), intent(inout) :: model
-
-    integer(kind=int64) :: nh !counter for HRUs
     class(msgpack), allocatable :: mp
     class(mp_arr_type), allocatable :: mp_sub_arr
     class(mp_arr_type), allocatable :: mp_arr
@@ -382,49 +380,56 @@ contains
     end if
   END SUBROUTINE new_serialization_request
 
-  SUBROUTINE deserialize_mp_buffer (model)
+  SUBROUTINE deserialize_mp_buffer (model, serialized_data)
     type(noahowp_type), intent(inout) :: model
+    integer , intent(in) :: serialized_data(:)
+    integer(kind=1), allocatable :: serialized_data_1b(:)
     class(mp_value_type), allocatable :: mpv
     class(msgpack), allocatable :: mp
+    class(mp_arr_type), allocatable :: arr_all
     class(mp_arr_type), allocatable :: arr
     logical :: error, status
-    integer(kind=int64) :: index, index_pos, numbytes
+    integer(kind=int64) :: index
     
     mp = msgpack()
-
-    index = 1
-    index_pos = 1
-    do while(mp%is_available(model%serialization_buffer(index:)))
-      call mp%unpack_buf(model%serialization_buffer(index:), mpv, numbytes)   
-      if(mp%failed()) then
-        call write_log("De-serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
-      else
-        call get_arr_ref(mpv, arr, status)
-        if(status) then
-          select case(index_pos)
-            case(1)
-              call forcing_deserialization (arr, model%forcing)
-            case(2)  
-              call energy_deserialization (arr, model%energy)
-            case(3)
-              call domain_deserialization (arr, model%domain)
-            case(4)
-              call water_deserialization (arr, model%water)
-            case(5)
-              call parameters_deserialization (arr, model%parameters)
-          end select
-        else
-          call write_log("Serialization using messagepack failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+    !convert integer(4) to integer(1) for messagepack
+    !possible loss of data?
+    serialized_data_1b = int(serialized_data, kind=1)
+    call mp%unpack(serialized_data_1b, mpv)
+    if (is_arr(mpv)) then
+      call get_arr_ref(mpv, arr_all, status) 
+      if (status) then
+        !The number of elements in the serialized data array is expected to be 5. Check here and stop if they are not equal.
+        if (mpv%numelements() .NE. 5) then
+          call write_log("The serialized data does not contain all state information. Please check inputs", LOG_LEVEL_FATAL)
+          stop
         end if
-      end if 
-      deallocate (mpv)
-      index = index + numbytes
-      index_pos = index_pos + 1
-      if(index > size(model%serialization_buffer)) then
-        exit
-      end if
-    end do
 
+        do index=1,5
+          call get_arr_ref(arr_all%values(index)%obj,arr,status)
+          if(status) then
+            select case(index)
+              case(1)
+                call forcing_deserialization (arr, model%forcing)
+              case(2)  
+                call energy_deserialization (arr, model%energy)
+              case(3)
+                call domain_deserialization (arr, model%domain)
+              case(4)
+                call water_deserialization (arr, model%water)
+              case(5)
+                call parameters_deserialization (arr, model%parameters)
+            end select
+          else
+            call write_log("Serialization using messagepack (internal array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+          end if
+        end do
+      else
+        call write_log("Serialization using messagepack (external array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+      end if
+    end if
+    deallocate (mpv)
+    
   END SUBROUTINE deserialize_mp_buffer
 
 end module RunModule

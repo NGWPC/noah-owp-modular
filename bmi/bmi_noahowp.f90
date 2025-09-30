@@ -896,7 +896,7 @@ contains
          call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
          bmi_status = BMI_FAILURE
       else
-         nbytes = size(this%model%serialization_buffer)
+         nbytes = size(this%model%serialization_buffer,KIND=int64)
          bmi_status = BMI_SUCCESS
       end if
     else if (name == "serialization_free") then 
@@ -950,12 +950,12 @@ contains
     case("ISNOW")
        dest(:) = this%model%water%ISNOW
        bmi_status = BMI_SUCCESS
-    case("serialization_state")
+    case("serialization_size")
         if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
             call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
             bmi_status = BMI_FAILURE
         else
-            dest = size(this%model%serialization_buffer)
+            dest = size(this%model%serialization_buffer,KIND=int64)
             bmi_status = BMI_SUCCESS
          end if
     case default
@@ -1162,9 +1162,12 @@ contains
      integer :: n_elements
 
      select case(name)
-     case default
-        bmi_status = BMI_FAILURE
-        call write_log("bmi:noahowp_get_ptr_int: invalid var " // name, LOG_LEVEL_WARNING)
+      case("serialization_state")
+          dest_ptr = this%model%serialization_buffer
+          bmi_status = BMI_SUCCESS
+      case default
+          bmi_status = BMI_FAILURE
+          call write_log("bmi:noahowp_get_ptr_int: invalid var " // name, LOG_LEVEL_WARNING)
      end select
    end function noahowp_get_ptr_int
 
@@ -1283,20 +1286,22 @@ contains
 !        this%model%id = src(1)
 !        bmi_status = BMI_SUCCESS
       case("serialization_create")
-         !call new_serialization_request(this%model, exec_status)
+         call new_serialization_request(this%model, exec_status)
          if (exec_status == 0) then
             bmi_status = BMI_SUCCESS
+            call write_log("Serialization for state saving complete", LOG_LEVEL_DEBUG)
          else
-            bmi_status = BMI_FAILURE 
+            bmi_status = BMI_FAILURE
+            call write_log(" Failed to create serialized data for state saving", LOG_LEVEL_DEBUG) 
          end if
       case("serialization_state")
-         call deserialize_mp_buffer(this%model)
+         call deserialize_mp_buffer(this%model,src)
          bmi_status = BMI_SUCCESS
       case("serialization_free")
          if(allocated(this%model%serialization_buffer)) then
             deallocate(this%model%serialization_buffer)
-            bmi_status = BMI_SUCCESS
          end if
+         bmi_status = BMI_SUCCESS
       case default
        bmi_status = BMI_FAILURE
        call write_log("bmi:noahowp_set_int: invalid var " // name, LOG_LEVEL_WARNING)

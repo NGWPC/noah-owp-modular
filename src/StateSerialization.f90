@@ -23,21 +23,21 @@ SUBROUTINE forcing_serialization (forcing, mp_arr)
     mp_arr%values(5)%obj = mp_float_type(forcing%SFCPRS) !SFCPRS
     mp_arr%values(6)%obj = mp_float_type(forcing%SOLDN) !SOLDN
     mp_arr%values(7)%obj = mp_float_type(forcing%LWDN) !LWDN
-    mp_arr%values(8)%obj = mp_int_type(forcing%YEARLEN) !YEARLEN, out
-    mp_arr%values(9)%obj = mp_float_type(forcing%JULIAN) !JULIAN, out
-    mp_arr%values(10)%obj = mp_float_type(forcing%THAIR) !THAIR, out
-    mp_arr%values(11)%obj = mp_float_type(forcing%QAIR) !QAIR, out
-    mp_arr%values(12)%obj = mp_float_type(forcing%EAIR) !EAIR, out
-    mp_arr%values(13)%obj = mp_float_type(forcing%RHOAIR) !RHOAIR, out
-    mp_arr%values(14)%obj = mp_float_type(forcing%O2PP) !O2PP
-    mp_arr%values(15)%obj = mp_float_type(forcing%CO2PP) !CO2PP
-    mp_arr%values(16)%obj = mp_float_type(forcing%SWDOWN) !SWDOWN, out
-    mp_arr%values(17)%obj = transfer_values_to_mp(forcing%SOLAD) !SOLAD
-    mp_arr%values(18)%obj = transfer_values_to_mp(forcing%SOLAI) !SOLAI
-    mp_arr%values(19)%obj = mp_float_type(forcing%PRCP) !PRCP
-    mp_arr%values(20)%obj = mp_float_type(forcing%PRCPNONC) !PRCPNONC
-    mp_arr%values(21)%obj = mp_float_type(forcing%FPICE) !FPICE, out 
-    mp_arr%values(22)%obj = mp_float_type(forcing%UR) !UR, out
+    mp_arr%values(8)%obj = mp_float_type(forcing%JULIAN) !JULIAN, out
+    mp_arr%values(9)%obj = mp_float_type(forcing%THAIR) !THAIR, out
+    mp_arr%values(10)%obj = mp_float_type(forcing%QAIR) !QAIR, out
+    mp_arr%values(11)%obj = mp_float_type(forcing%EAIR) !EAIR, out
+    mp_arr%values(12)%obj = mp_float_type(forcing%RHOAIR) !RHOAIR, out
+    mp_arr%values(13)%obj = mp_float_type(forcing%O2PP) !O2PP
+    mp_arr%values(14)%obj = mp_float_type(forcing%CO2PP) !CO2PP
+    mp_arr%values(15)%obj = mp_float_type(forcing%SWDOWN) !SWDOWN, out
+    mp_arr%values(16)%obj = mp_float_type(forcing%PRCP) !PRCP
+    mp_arr%values(17)%obj = mp_float_type(forcing%PRCPNONC) !PRCPNONC
+    mp_arr%values(18)%obj = mp_float_type(forcing%FPICE) !FPICE, out 
+    mp_arr%values(19)%obj = mp_float_type(forcing%UR) !UR, out
+    mp_arr%values(20)%obj = mp_int_type(forcing%YEARLEN) !YEARLEN, out
+    mp_arr%values(21)%obj = transfer_values_to_mp(forcing%SOLAD) !SOLAD
+    mp_arr%values(22)%obj = transfer_values_to_mp(forcing%SOLAI) !SOLAI
 
 END SUBROUTINE forcing_serialization
 
@@ -51,16 +51,14 @@ SUBROUTINE forcing_deserialization (mp_arr, forcing)
     integer(kind=int64) :: index, sub_index 
 
     do index=1, mp_arr%numelements()
-        if (index == 8) then
+        if (index .LE. 19) then    
+            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
+        else if (index == 20) then
             call get_int(mp_arr%values(index)%obj, deserialized_int_val, status)
-        else if (index == 17 .OR. index == 18) then
+        else if (index .GE. 21) then
             if (is_arr(mp_arr%values(index)%obj)) then
                 call get_arr_ref(mp_arr%values(index)%obj, mp_sub_arr, status)
-            else
-                !write to log file
             end if
-        else    
-            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
         end if
         select case(index)
             case(1)
@@ -78,41 +76,41 @@ SUBROUTINE forcing_deserialization (mp_arr, forcing)
             case(7)
                 forcing%LWDN = deserialized_val
             case(8)
-                forcing%YEARLEN = deserialized_int_val
-            case(9)
                 forcing%JULIAN = deserialized_val
-            case(10)
+            case(9)
                 forcing%THAIR = deserialized_val
-            case(11)
+            case(10)
                 forcing%QAIR = deserialized_val
-            case(12)
+            case(11)
                 forcing%EAIR = deserialized_val
-            case(13)
+            case(12)
                 forcing%RHOAIR = deserialized_val
-            case(14)
+            case(13)
                 forcing%O2PP = deserialized_val
-            case(15)
+            case(14)
                 forcing%CO2PP = deserialized_val
-            case(16)
+            case(15)
                 forcing%SWDOWN = deserialized_val
+            case(16)
+                forcing%PRCP = deserialized_val
             case(17)
+                forcing%PRCPNONC = deserialized_val
+            case(18)
+                forcing%FPICE = deserialized_val
+            case(19)
+                forcing%UR = deserialized_val
+            case(20)
+                forcing%YEARLEN = deserialized_int_val
+            case(21)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     forcing%SOLAD(sub_index) = deserialized_val
                 end do
-            case(18)
+            case(22)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     forcing%SOLAI(sub_index) = deserialized_val
                 end do
-            case(19)
-                forcing%PRCP = deserialized_val
-            case(20)
-                forcing%PRCPNONC = deserialized_val
-            case(21)
-                forcing%FPICE = deserialized_val
-            case(22)
-                forcing%UR = deserialized_val
         end select
     end do
 END SUBROUTINE forcing_deserialization
@@ -124,10 +122,9 @@ SUBROUTINE domain_serialization (domain, mp_arr)
 
     mp_arr = mp_arr_type(6)
     mp_arr%values(1)%obj = mp_float_type(domain%curr_datetime) !curr_datetime
-    mp_arr%values(2)%obj = mp_int_type(domain%ITIME) !ITIME
-    mp_arr%values(3)%obj = mp_float_type(domain%time_dbl) !time_dbl
+    mp_arr%values(2)%obj = mp_float_type(domain%time_dbl) !time_dbl
+    mp_arr%values(3)%obj = mp_int_type(domain%ITIME) !ITIME
     mp_arr%values(4)%obj = mp_str_type(domain%nowdate) !nowdate
-
     mp_arr%values(5)%obj = transfer_values_to_mp(domain%DZSNSO)
     mp_arr%values(6)%obj = transfer_values_to_mp(domain%ZSNSO)
 
@@ -144,26 +141,24 @@ SUBROUTINE domain_deserialization (mp_arr, domain)
     integer(kind=int64) :: index, sub_index 
 
     do index=1, mp_arr%numelements()
-        if (index == 5 .OR. index == 6) then
-            if (is_arr(mp_arr%values(index)%obj)) then
-                call get_arr_ref(mp_arr%values(index)%obj, mp_sub_arr, status)
-            else
-                !write to log file
-            end if
-        else if (index == 2) then
+        if (index .LE. 2) then
+            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
+        else if (index == 3) then
             call get_int(mp_arr%values(index)%obj, deserialized_int_val, status)
         else if (index == 4) then
             call get_str(mp_arr%values(index)%obj, deserialized_str_val, status)
-        else    
-            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
+        else if (index .GE. 5) then
+            if (is_arr(mp_arr%values(index)%obj)) then
+                call get_arr_ref(mp_arr%values(index)%obj, mp_sub_arr, status)
+            end if
         end if
         select case(index)
             case(1)
                 domain%curr_datetime = deserialized_val
             case(2)
-                domain%ITIME = deserialized_int_val
-            case(3)
                 domain%time_dbl = deserialized_val
+            case(3)
+                domain%ITIME = deserialized_int_val
             case(4)
                 domain%nowdate = deserialized_str_val
             case(5)
@@ -217,99 +212,99 @@ SUBROUTINE energy_serialization (energy, mp_arr)
     mp_arr%values(30)%obj = mp_float_type(energy%RSURF) !RSURF
     mp_arr%values(31)%obj = mp_float_type(energy%RHSUR) !RHSUR
     mp_arr%values(32)%obj = mp_float_type(energy%LATHEAV) !LATHEAV
-    mp_arr%values(33)%obj = mp_bool_type(energy%frozen_canopy) !frozen_canopy
     mp_arr%values(34)%obj = mp_float_type(energy%GAMMAV) !GAMMAV
     mp_arr%values(35)%obj = mp_float_type(energy%LATHEAG) !LATHEAG
-    mp_arr%values(36)%obj = mp_bool_type(energy%frozen_ground) !frozen_ground
-    mp_arr%values(37)%obj = mp_float_type(energy%GAMMAG) !GAMMAG
-    mp_arr%values(38)%obj = mp_float_type(energy%TGB) !TGB
-    mp_arr%values(39)%obj = mp_float_type(energy%CMB) !CMB
-    mp_arr%values(40)%obj = mp_float_type(energy%CHB) !CHB
-    mp_arr%values(41)%obj = mp_float_type(energy%Z0WRF) !Z0WRF
-    mp_arr%values(42)%obj = mp_float_type(energy%RSSUN) !RSSUN
-    mp_arr%values(43)%obj = mp_float_type(energy%T2M) !T2M
-    mp_arr%values(44)%obj = mp_float_type(energy%Q1) !Q1
-    mp_arr%values(45)%obj = mp_float_type(energy%Q2E) !Q2E
-    mp_arr%values(46)%obj = mp_float_type(energy%FGEV) !FGEV
-    mp_arr%values(47)%obj = mp_float_type(energy%TS) !TS
-    mp_arr%values(48)%obj = mp_float_type(energy%TAUY) !TAUY
-    mp_arr%values(49)%obj = mp_float_type(energy%GH) !GH
-    mp_arr%values(50)%obj = mp_float_type(energy%SSOIL) !SSOIL
-    mp_arr%values(51)%obj = mp_float_type(energy%TGV) !TGV
-    mp_arr%values(52)%obj = mp_float_type(energy%FCEV) !FCEV
-    mp_arr%values(53)%obj = mp_float_type(energy%CM) !CM
-    mp_arr%values(54)%obj = mp_float_type(energy%FIRA) !FIRA
-    mp_arr%values(55)%obj = mp_float_type(energy%RSSHA) !RSSHA
-    mp_arr%values(56)%obj = mp_float_type(energy%TG) !TG
+    mp_arr%values(36)%obj = mp_float_type(energy%GAMMAG) !GAMMAG
+    mp_arr%values(37)%obj = mp_float_type(energy%TGB) !TGB
+    mp_arr%values(38)%obj = mp_float_type(energy%CMB) !CMB
+    mp_arr%values(39)%obj = mp_float_type(energy%CHB) !CHB
+    mp_arr%values(40)%obj = mp_float_type(energy%Z0WRF) !Z0WRF
+    mp_arr%values(41)%obj = mp_float_type(energy%RSSUN) !RSSUN
+    mp_arr%values(42)%obj = mp_float_type(energy%T2M) !T2M
+    mp_arr%values(43)%obj = mp_float_type(energy%Q1) !Q1
+    mp_arr%values(44)%obj = mp_float_type(energy%Q2E) !Q2E
+    mp_arr%values(45)%obj = mp_float_type(energy%FGEV) !FGEV
+    mp_arr%values(46)%obj = mp_float_type(energy%TS) !TS
+    mp_arr%values(47)%obj = mp_float_type(energy%TAUY) !TAUY
+    mp_arr%values(48)%obj = mp_float_type(energy%GH) !GH
+    mp_arr%values(59)%obj = mp_float_type(energy%SSOIL) !SSOIL
+    mp_arr%values(50)%obj = mp_float_type(energy%TGV) !TGV
+    mp_arr%values(51)%obj = mp_float_type(energy%FCEV) !FCEV
+    mp_arr%values(52)%obj = mp_float_type(energy%CM) !CM
+    mp_arr%values(53)%obj = mp_float_type(energy%FIRA) !FIRA
+    mp_arr%values(54)%obj = mp_float_type(energy%RSSHA) !RSSHA
+    mp_arr%values(55)%obj = mp_float_type(energy%TG) !TG
     mp_arr%values(57)%obj = mp_float_type(energy%CH) !CH
-    mp_arr%values(58)%obj = mp_float_type(energy%FCTR) !FCTR
-    mp_arr%values(59)%obj = mp_float_type(energy%PAH) !PAH
-    mp_arr%values(60)%obj = mp_float_type(energy%TAUX) !TAUX
-    mp_arr%values(61)%obj = mp_float_type(energy%FSH) !FSH
-    mp_arr%values(62)%obj = mp_float_type(energy%EMISSI) !EMISSI
-    mp_arr%values(63)%obj = mp_float_type(energy%TRAD) !TRAD
-    mp_arr%values(64)%obj = mp_float_type(energy%APAR) !APAR
-    mp_arr%values(65)%obj = mp_float_type(energy%PSN) !PSN
-    mp_arr%values(66)%obj = transfer_values_to_mp(energy%STC) !STC array
-    mp_arr%values(67)%obj = mp_float_type(energy%LH) !LH
-    mp_arr%values(68)%obj = mp_float_type(energy%TGS) !TGS
-    mp_arr%values(69)%obj = transfer_values_to_mp(energy%HCPCT ) !HCPCT array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(70)%obj = transfer_values_to_mp(energy%DF ) !DF array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(71)%obj = transfer_values_to_mp(energy%FACT ) !FACT array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(72)%obj = mp_float_type(energy%PAHV) !PAHV
-    mp_arr%values(73)%obj = mp_float_type(energy%PAHG) !PAHG
-    mp_arr%values(74)%obj = mp_float_type(energy%PAHB) !PAHB
-    mp_arr%values(75)%obj = mp_float_type(energy%FSHA) !FSHA
-    mp_arr%values(76)%obj = mp_float_type(energy%LAISUN) !LAISUN
-    mp_arr%values(77)%obj = mp_float_type(energy%LAISHA) !LAISHA
-    mp_arr%values(78)%obj = mp_float_type(energy%BGAP) !BGAP
-    mp_arr%values(79)%obj = mp_float_type(energy%WGAP) !WGAP
-    mp_arr%values(80)%obj = transfer_values_to_mp(energy%ALBD)  !ALBD array  (1:parameters%NBAND)
-    mp_arr%values(81)%obj = transfer_values_to_mp(energy%ALBI) !ALBI array  (1:parameters%NBAND)
-    mp_arr%values(82)%obj = transfer_values_to_mp(energy%ALBGRD) !ALBGRD array  (1:parameters%NBAND)
-    mp_arr%values(83)%obj = transfer_values_to_mp(energy%ALBGRI) !ALBGRI array  (1:parameters%NBAND)
-    mp_arr%values(84)%obj = transfer_values_to_mp(energy%ALBSND) !ALBSND array  (1:parameters%NBAND)
-    mp_arr%values(85)%obj = transfer_values_to_mp(energy%ALBSNI) !ALBSNI array  (1:parameters%NBAND)
-    mp_arr%values(86)%obj = transfer_values_to_mp(energy%FABD) !FABD array  (1:parameters%NBAND)
-    mp_arr%values(87)%obj = transfer_values_to_mp(energy%FABI) !FABI array  (1:parameters%NBAND)
-    mp_arr%values(88)%obj = transfer_values_to_mp(energy%FTDD) !FTDD array  (1:parameters%NBAND)
-    mp_arr%values(89)%obj = transfer_values_to_mp(energy%FTID) !FTID array  (1:parameters%NBAND)
-    mp_arr%values(90)%obj = transfer_values_to_mp(energy%FTII) !FTII array  (1:parameters%NBAND)
-    mp_arr%values(91)%obj = transfer_values_to_mp(energy%RHO) !RHO array  (1:parameters%NBAND)
-    mp_arr%values(92)%obj = transfer_values_to_mp(energy%TAU) !TAU array  (1:parameters%NBAND)
-    mp_arr%values(93)%obj = mp_float_type(energy%FSUN) !FSUN
-    mp_arr%values(94)%obj = mp_float_type(energy%TAUSS) !TAUSS
-    mp_arr%values(95)%obj = mp_float_type(energy%FAGE) !FAGE
-    mp_arr%values(96)%obj = mp_float_type(energy%ALB) !ALB
-    mp_arr%values(97)%obj = mp_float_type(energy%ALBOLD) !ALBOLD
-    mp_arr%values(98)%obj = transfer_values_to_mp(energy%FTDI) !FTDI array  (1:2)
-    mp_arr%values(99)%obj = transfer_values_to_mp(energy%FREVD) !FREVD array  (1:2)
-    mp_arr%values(100)%obj = transfer_values_to_mp(energy%FREGD) !FREGD array  (1:2)
-    mp_arr%values(101)%obj = transfer_values_to_mp(energy%FREVI) !FREVI array  (1:2)
-    mp_arr%values(102)%obj = transfer_values_to_mp(energy%FREGI) !FREGI array  (1:2)
-    mp_arr%values(103)%obj = mp_float_type(energy%SAG) !SAG
-    mp_arr%values(104)%obj = mp_float_type(energy%SAV) !SAV
-    mp_arr%values(105)%obj = mp_float_type(energy%FSA) !FSA
-    mp_arr%values(106)%obj = mp_float_type(energy%PARSUN) !PARSUN
-    mp_arr%values(107)%obj = mp_float_type(energy%PARSHA) !PARSHA
-    mp_arr%values(108)%obj = mp_float_type(energy%FSR) !FSR
-    mp_arr%values(109)%obj = mp_float_type(energy%FSRV) !FSRV
-    mp_arr%values(110)%obj = mp_float_type(energy%FSRG) !FSRG
-    mp_arr%values(111)%obj = mp_float_type(energy%QSFC) !QSFC
-    mp_arr%values(112)%obj = mp_float_type(energy%TV) !TV
-    mp_arr%values(113)%obj = mp_float_type(energy%CAH2) !CAH2
-    mp_arr%values(114)%obj = mp_float_type(energy%IRB) !IRB
-    mp_arr%values(115)%obj = mp_float_type(energy%SHB) !SHB
-    mp_arr%values(116)%obj = mp_float_type(energy%EVB) !EVB
-    mp_arr%values(117)%obj = mp_float_type(energy%GHB) !GHB
-    mp_arr%values(118)%obj = mp_float_type(energy%TAUXB) !TAUXB
-    mp_arr%values(119)%obj = mp_float_type(energy%TAUYB) !TAUYB
-    mp_arr%values(120)%obj = mp_float_type(energy%EHB2) !EHB2
-    mp_arr%values(121)%obj = mp_float_type(energy%T2MB) !T2MB
-    mp_arr%values(122)%obj = mp_float_type(energy%Q2B) !Q2B
-    mp_arr%values(123)%obj = transfer_values_to_mp_int(energy%IMELT) !IMELT array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(124)%obj = mp_float_type(energy%QMELT) !QMELT
-    mp_arr%values(125)%obj = mp_float_type(energy%SNOWT_AVG) !SNOWT_AVG ,  could be realMissing
+    mp_arr%values(56)%obj = mp_float_type(energy%FCTR) !FCTR
+    mp_arr%values(57)%obj = mp_float_type(energy%PAH) !PAH
+    mp_arr%values(58)%obj = mp_float_type(energy%TAUX) !TAUX
+    mp_arr%values(59)%obj = mp_float_type(energy%FSH) !FSH
+    mp_arr%values(60)%obj = mp_float_type(energy%EMISSI) !EMISSI
+    mp_arr%values(61)%obj = mp_float_type(energy%TRAD) !TRAD
+    mp_arr%values(62)%obj = mp_float_type(energy%APAR) !APAR
+    mp_arr%values(63)%obj = mp_float_type(energy%PSN) !PSN
+    mp_arr%values(64)%obj = mp_float_type(energy%LH) !LH
+    mp_arr%values(65)%obj = mp_float_type(energy%TGS) !TGS
+    mp_arr%values(66)%obj = mp_float_type(energy%PAHV) !PAHV
+    mp_arr%values(67)%obj = mp_float_type(energy%PAHG) !PAHG
+    mp_arr%values(68)%obj = mp_float_type(energy%PAHB) !PAHB
+    mp_arr%values(69)%obj = mp_float_type(energy%FSHA) !FSHA
+    mp_arr%values(70)%obj = mp_float_type(energy%LAISUN) !LAISUN
+    mp_arr%values(71)%obj = mp_float_type(energy%LAISHA) !LAISHA
+    mp_arr%values(72)%obj = mp_float_type(energy%BGAP) !BGAP
+    mp_arr%values(73)%obj = mp_float_type(energy%WGAP) !WGAP
+    mp_arr%values(74)%obj = mp_float_type(energy%FSUN) !FSUN
+    mp_arr%values(75)%obj = mp_float_type(energy%TAUSS) !TAUSS
+    mp_arr%values(76)%obj = mp_float_type(energy%FAGE) !FAGE
+    mp_arr%values(77)%obj = mp_float_type(energy%ALB) !ALB
+    mp_arr%values(78)%obj = mp_float_type(energy%ALBOLD) !ALBOLD
+    mp_arr%values(79)%obj = mp_float_type(energy%SAG) !SAG
+    mp_arr%values(80)%obj = mp_float_type(energy%SAV) !SAV
+    mp_arr%values(81)%obj = mp_float_type(energy%FSA) !FSA
+    mp_arr%values(82)%obj = mp_float_type(energy%PARSUN) !PARSUN
+    mp_arr%values(83)%obj = mp_float_type(energy%PARSHA) !PARSHA
+    mp_arr%values(84)%obj = mp_float_type(energy%FSR) !FSR
+    mp_arr%values(85)%obj = mp_float_type(energy%FSRV) !FSRV
+    mp_arr%values(86)%obj = mp_float_type(energy%FSRG) !FSRG
+    mp_arr%values(87)%obj = mp_float_type(energy%QSFC) !QSFC
+    mp_arr%values(88)%obj = mp_float_type(energy%TV) !TV
+    mp_arr%values(89)%obj = mp_float_type(energy%CAH2) !CAH2
+    mp_arr%values(90)%obj = mp_float_type(energy%IRB) !IRB
+    mp_arr%values(91)%obj = mp_float_type(energy%SHB) !SHB
+    mp_arr%values(92)%obj = mp_float_type(energy%EVB) !EVB
+    mp_arr%values(93)%obj = mp_float_type(energy%GHB) !GHB
+    mp_arr%values(94)%obj = mp_float_type(energy%TAUXB) !TAUXB
+    mp_arr%values(95)%obj = mp_float_type(energy%TAUYB) !TAUYB
+    mp_arr%values(96)%obj = mp_float_type(energy%EHB2) !EHB2
+    mp_arr%values(97)%obj = mp_float_type(energy%T2MB) !T2MB
+    mp_arr%values(98)%obj = mp_float_type(energy%Q2B) !Q2B
+    mp_arr%values(99)%obj = mp_float_type(energy%QMELT) !QMELT
+    mp_arr%values(100)%obj = mp_float_type(energy%SNOWT_AVG) !SNOWT_AVG ,  could be realMissing
+    mp_arr%values(101)%obj = mp_bool_type(energy%frozen_ground) !frozen_ground
+    mp_arr%values(102)%obj = mp_bool_type(energy%frozen_canopy) !frozen_canopy
+    mp_arr%values(103)%obj = transfer_values_to_mp(energy%FTDI) !FTDI array  (1:2)
+    mp_arr%values(104)%obj = transfer_values_to_mp(energy%FREVD) !FREVD array  (1:2)
+    mp_arr%values(105)%obj = transfer_values_to_mp(energy%FREGD) !FREGD array  (1:2)
+    mp_arr%values(106)%obj = transfer_values_to_mp(energy%FREVI) !FREVI array  (1:2)
+    mp_arr%values(107)%obj = transfer_values_to_mp(energy%FREGI) !FREGI array  (1:2)
+    mp_arr%values(108)%obj = transfer_values_to_mp(energy%STC) !STC array
+    mp_arr%values(109)%obj = transfer_values_to_mp(energy%HCPCT ) !HCPCT array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(110)%obj = transfer_values_to_mp(energy%DF ) !DF array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(111)%obj = transfer_values_to_mp(energy%FACT ) !FACT array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(112)%obj = transfer_values_to_mp(energy%ALBD)  !ALBD array  (1:parameters%NBAND)
+    mp_arr%values(113)%obj = transfer_values_to_mp(energy%ALBI) !ALBI array  (1:parameters%NBAND)
+    mp_arr%values(114)%obj = transfer_values_to_mp(energy%ALBGRD) !ALBGRD array  (1:parameters%NBAND)
+    mp_arr%values(115)%obj = transfer_values_to_mp(energy%ALBGRI) !ALBGRI array  (1:parameters%NBAND)
+    mp_arr%values(116)%obj = transfer_values_to_mp(energy%ALBSND) !ALBSND array  (1:parameters%NBAND)
+    mp_arr%values(117)%obj = transfer_values_to_mp(energy%ALBSNI) !ALBSNI array  (1:parameters%NBAND)
+    mp_arr%values(118)%obj = transfer_values_to_mp(energy%FABD) !FABD array  (1:parameters%NBAND)
+    mp_arr%values(119)%obj = transfer_values_to_mp(energy%FABI) !FABI array  (1:parameters%NBAND)
+    mp_arr%values(120)%obj = transfer_values_to_mp(energy%FTDD) !FTDD array  (1:parameters%NBAND)
+    mp_arr%values(121)%obj = transfer_values_to_mp(energy%FTID) !FTID array  (1:parameters%NBAND)
+    mp_arr%values(122)%obj = transfer_values_to_mp(energy%FTII) !FTII array  (1:parameters%NBAND)
+    mp_arr%values(123)%obj = transfer_values_to_mp(energy%RHO) !RHO array  (1:parameters%NBAND)
+    mp_arr%values(124)%obj = transfer_values_to_mp(energy%TAU) !TAU array  (1:parameters%NBAND)
+    mp_arr%values(125)%obj = transfer_values_to_mp_int(energy%IMELT) !IMELT array  (-levels%NSNOW+1:levels%NSOIL)
 
 END SUBROUTINE energy_serialization
 
@@ -323,16 +318,14 @@ SUBROUTINE energy_deserialization (mp_arr, energy)
     integer(kind=int64) :: index, sub_index 
 
     do index=1, mp_arr%numelements()
-        if ((index >= 69 .AND. index <= 71) .OR. (index >= 80 .AND. index <= 92) .OR. (index >= 98 .AND. index <= 102) .OR. (index == 66) .OR. (index == 123)) then
+        if (index .LE. 100) then     
+            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
+        else if (index == 101 .OR. index == 102) then
+            call get_bool(mp_arr%values(index)%obj, is_true_val, status)
+        else if ((index .GE. 103)) then
             if (is_arr(mp_arr%values(index)%obj)) then
                 call get_arr_ref(mp_arr%values(index)%obj, mp_sub_arr, status)
-            else
-                !write to log file
             end if
-        else if (index == 33 .OR. index == 36) then
-            call get_bool(mp_arr%values(index)%obj, is_true_val, status)
-        else    
-            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
         end if
         select case(index)
             case(1)
@@ -398,260 +391,260 @@ SUBROUTINE energy_deserialization (mp_arr, energy)
             case(32)
                 energy%LATHEAV = deserialized_val
             case(33)
-                energy%frozen_canopy = is_true_val
-            case(34)
                 energy%GAMMAV = deserialized_val
-            case(35)
+            case(34)
                 energy%LATHEAG = deserialized_val
-            case(36)
-                energy%frozen_ground = is_true_val
-            case(37)
+            case(35)
                 energy%GAMMAG = deserialized_val
-            case(38)
+            case(36)
                 energy%TGB = deserialized_val
-            case(39)
+            case(37)
                 energy%CMB = deserialized_val
-            case(40)
+            case(38)
                 energy%CHB = deserialized_val
-            case(41)
+            case(39)
                 energy%Z0WRF = deserialized_val
-            case(42)
+            case(40)
                 energy%RSSUN = deserialized_val
-            case(43)
+            case(41)
                 energy%T2M = deserialized_val
-            case(44)
+            case(42)
                 energy%Q1 = deserialized_val
-            case(45)
+            case(43)
                 energy%Q2E = deserialized_val
-            case(46)
+            case(44)
                 energy%FGEV = deserialized_val
-            case(47)
+            case(45)
                 energy%TS = deserialized_val
-            case(48)
+            case(46)
                 energy%TAUY = deserialized_val
-            case(49)
+            case(47)
                 energy%GH = deserialized_val
-            case(50)
+            case(48)
                 energy%SSOIL = deserialized_val
-            case(51)
+            case(49)
                 energy%TGV = deserialized_val
-            case(52)
+            case(50)
                 energy%FCEV = deserialized_val
-            case(53)
+            case(51)
                 energy%CM = deserialized_val
-            case(54)
+            case(52)
                 energy%FIRA = deserialized_val
-            case(55)
+            case(53)
                 energy%RSSHA = deserialized_val
-            case(56)
+            case(54)
                 energy%TG = deserialized_val
-            case(57)
+            case(55)
                 energy%CH = deserialized_val
-            case(58)
+            case(56)
                 energy%FCTR = deserialized_val
-            case(59)
+            case(57)
                 energy%PAH = deserialized_val
-            case(60)
+            case(58)
                 energy%TAUX = deserialized_val
-            case(61)
+            case(59)
                 energy%FSH = deserialized_val
-            case(62)
+            case(60)
                 energy%EMISSI = deserialized_val
-            case(63)
+            case(61)
                 energy%TRAD = deserialized_val
-            case(64)
+            case(62)
                 energy%APAR = deserialized_val
-            case(65)
+            case(63)
                 energy%PSN = deserialized_val
-            case(66)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%STC(sub_index) = deserialized_val
-                end do
-            case(67)
+            case(64)
                 energy%LH = deserialized_val
-            case(68)
+            case(65)
                 energy%TGS = deserialized_val
-            case(69)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%HCPCT(sub_index) = deserialized_val
-                end do
-            case(70)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%DF(sub_index) = deserialized_val
-                end do
-            case(71)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FACT(sub_index) = deserialized_val
-                end do
-            case(72)
+            case(66)
                 energy%PAHV = deserialized_val
-            case(73)
+            case(67)
                 energy%PAHV = deserialized_val
-            case(74)
+            case(68)
                 energy%PAHB = deserialized_val
-            case(75)
+            case(69)
                 energy%FSHA = deserialized_val
-            case(76)
+            case(70)
                 energy%LAISUN = deserialized_val
-            case(77)
+            case(71)
                 energy%LAISHA = deserialized_val
-            case(78)
+            case(72)
                 energy%BGAP = deserialized_val
-            case(79)
+            case(73)
                 energy%WGAP = deserialized_val
-            case(80)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBD(sub_index) = deserialized_val
-                end do
-            case(81)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBI(sub_index) = deserialized_val
-                end do
-            case(82)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBGRD(sub_index) = deserialized_val
-                end do
-            case(83)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBGRI(sub_index) = deserialized_val
-                end do
-            case(84)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBSND(sub_index) = deserialized_val
-                end do
-            case(85)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBSNI(sub_index) = deserialized_val
-                end do
-            case(86)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FABD(sub_index) = deserialized_val
-                end do
-            case(87)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FABI(sub_index) = deserialized_val
-                end do
-            case(88)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTDD(sub_index) = deserialized_val
-                end do
-            case(89)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTID(sub_index) = deserialized_val
-                end do
-            case(90)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTII(sub_index) = deserialized_val
-                end do
-            case(91)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%RHO(sub_index) = deserialized_val
-                end do
-            case(92)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%TAU(sub_index) = deserialized_val
-                end do
-            case(93)
+            case(74)
                 energy%FSUN = deserialized_val
-            case(94)
+            case(75)
                 energy%TAUSS = deserialized_val
-            case(95)
+            case(76)
                 energy%FAGE = deserialized_val
-            case(96)
+            case(77)
                 energy%ALB = deserialized_val
-            case(97)
+            case(78)
                 energy%ALBOLD = deserialized_val
+            case(79)
+                energy%SAG = deserialized_val
+            case(80)
+                energy%SAV = deserialized_val
+            case(81)
+                energy%FSA = deserialized_val
+            case(82)
+                energy%PARSUN = deserialized_val
+            case(83)
+                energy%PARSHA = deserialized_val
+            case(84)
+                energy%FSR = deserialized_val
+            case(85)
+                energy%FSRV = deserialized_val
+            case(86)
+                energy%FSRG = deserialized_val
+            case(87)
+                energy%QSFC = deserialized_val
+            case(88)
+                energy%TV = deserialized_val
+            case(89)
+                energy%CAH2 = deserialized_val
+            case(90)
+                energy%IRB = deserialized_val
+            case(91)
+                energy%SHB = deserialized_val
+            case(92)
+                energy%EVB = deserialized_val
+            case(93)
+                energy%GHB = deserialized_val
+            case(94)
+                energy%TAUXB = deserialized_val
+            case(95)
+                energy%TAUYB = deserialized_val
+            case(96)
+                energy%EHB2 = deserialized_val
+            case(97)
+                energy%T2MB = deserialized_val
             case(98)
+                energy%Q2B = deserialized_val
+            case(99)
+                energy%QMELT = deserialized_val
+            case(100)
+                energy%SNOWT_AVG = deserialized_val
+            case(101)
+                energy%frozen_canopy = is_true_val
+            case(102)
+                energy%frozen_ground = is_true_val
+            case(103)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     energy%FTDI(sub_index) = deserialized_val
                 end do
-            case(99)
+            case(104)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     energy%FREVD(sub_index) = deserialized_val
                 end do
-            case(100)
+            case(105)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     energy%FREGD(sub_index) = deserialized_val
                 end do
-            case(101)
+            case(106)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     energy%FREVI(sub_index) = deserialized_val
                 end do
-            case(102)
+            case(107)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     energy%FREGI(sub_index) = deserialized_val
                 end do
-            case(103)
-                energy%SAG = deserialized_val
-            case(104)
-                energy%SAV = deserialized_val
-            case(105)
-                energy%FSA = deserialized_val
-            case(106)
-                energy%PARSUN = deserialized_val
-            case(107)
-                energy%PARSHA = deserialized_val
             case(108)
-                energy%FSR = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%STC(sub_index) = deserialized_val
+                end do
             case(109)
-                energy%FSRV = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%HCPCT(sub_index) = deserialized_val
+                end do
             case(110)
-                energy%FSRG = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%DF(sub_index) = deserialized_val
+                end do
             case(111)
-                energy%QSFC = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FACT(sub_index) = deserialized_val
+                end do
             case(112)
-                energy%TV = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBD(sub_index) = deserialized_val
+                end do
             case(113)
-                energy%CAH2 = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBI(sub_index) = deserialized_val
+                end do
             case(114)
-                energy%IRB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBGRD(sub_index) = deserialized_val
+                end do
             case(115)
-                energy%SHB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBGRI(sub_index) = deserialized_val
+                end do
             case(116)
-                energy%EVB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBSND(sub_index) = deserialized_val
+                end do
             case(117)
-                energy%GHB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%ALBSNI(sub_index) = deserialized_val
+                end do
             case(118)
-                energy%TAUXB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FABD(sub_index) = deserialized_val
+                end do
             case(119)
-                energy%TAUYB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FABI(sub_index) = deserialized_val
+                end do
             case(120)
-                energy%EHB2 = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTDD(sub_index) = deserialized_val
+                end do
             case(121)
-                energy%T2MB = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTID(sub_index) = deserialized_val
+                end do
             case(122)
-                energy%Q2B = deserialized_val
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%FTII(sub_index) = deserialized_val
+                end do
             case(123)
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%RHO(sub_index) = deserialized_val
+                end do
+            case(124)
+                do sub_index=1, mp_sub_arr%numelements()
+                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
+                    energy%TAU(sub_index) = deserialized_val
+                end do
+            case(125)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_int(mp_sub_arr%values(sub_index)%obj, deserialized_int_val, status)
                     energy%IMELT(sub_index) = deserialized_int_val
                 end do
-            case(124)
-                energy%QMELT = deserialized_val
-            case(125)
-                energy%SNOWT_AVG = deserialized_val
         end select
     end do   
 END SUBROUTINE energy_deserialization
@@ -682,50 +675,50 @@ SUBROUTINE water_serialization (water, mp_arr)
     mp_arr%values(18)%obj = mp_float_type(water%FSNO) !FSNO
     mp_arr%values(19)%obj = mp_float_type(water%BDSNO) !BDSNO
     mp_arr%values(20)%obj = mp_float_type(water%BTRAN) !BTRAN
-    mp_arr%values(21)%obj = transfer_values_to_mp(water%BTRANI ) !BTRANI array (1:levels%NSOIL)
-    mp_arr%values(22)%obj = transfer_values_to_mp(water%SNICEV ) !SNICEV array (-levels%NSNOW+1:0) # negative indexes
-    mp_arr%values(23)%obj = transfer_values_to_mp(water%EPORE ) !EPORE array (-levels%NSNOW+1:0) # negative indexes
-    mp_arr%values(24)%obj = transfer_values_to_mp(water%SNLIQV ) !SNLIQV array (-levels%NSNOW+1:0) # negative indexes
-    mp_arr%values(25)%obj = transfer_values_to_mp(water%SICE ) !SICE array (1:levels%NSOIL)
-    mp_arr%values(26)%obj = mp_float_type(water%SNEQV) !SNEQV
-    mp_arr%values(27)%obj = mp_float_type(water%SNOWH) !SNOWH
-    mp_arr%values(28)%obj = transfer_values_to_mp(water%SH2O ) !SH2O array (1:levels%NSOIL)
-    mp_arr%values(29)%obj = transfer_values_to_mp(water%SMC ) !SMC array (1:levels%NSOIL)
-    mp_arr%values(30)%obj = transfer_values_to_mp(water%SNICE ) !SNICE array (-levels%NSNOW+1:0)
-    mp_arr%values(31)%obj = transfer_values_to_mp(water%SNLIQ ) !SNLIQ array (-levels%NSNOW+1:0)
-    mp_arr%values(32)%obj = mp_float_type(water%PONDING) !PONDING
-    mp_arr%values(33)%obj = mp_float_type(water%SNEQVO) !SNEQVO
-    mp_arr%values(34)%obj = mp_float_type(water%QVAP) !QVAP
-    mp_arr%values(35)%obj = mp_float_type(water%QDEW) !QDEW
-    mp_arr%values(36)%obj = mp_float_type(water%QSNSUB) !QSNSUB
-    mp_arr%values(37)%obj = mp_float_type(water%QSEVA) !QSEVA
-    mp_arr%values(38)%obj = mp_float_type(water%QSNFRO) !QSNFRO
-    mp_arr%values(39)%obj = mp_float_type(water%QSDEW) !QSDEW
-    mp_arr%values(40)%obj = mp_float_type(water%QINSUR) !QINSUR
-    mp_arr%values(41)%obj = mp_float_type(water%ACSNOM) !ACSNOM
-    mp_arr%values(42)%obj = transfer_values_to_mp(water%ETRANI ) !ETRANI array (1:levels%NSOIL)
-    mp_arr%values(43)%obj = mp_float_type(water%RUNSRF) !RUNSRF
-    mp_arr%values(44)%obj = mp_float_type(water%WSLAKE) !WSLAKE
-    mp_arr%values(45)%obj = mp_float_type(water%EVAPOTRANS) !EVAPOTRANS
-    mp_arr%values(46)%obj = mp_float_type(water%ECAN) !ECAN
-    mp_arr%values(47)%obj = mp_float_type(water%ETRAN) !ETRAN
-    mp_arr%values(48)%obj = mp_float_type(water%SNOFLOW) !SNOFLOW
-    mp_arr%values(49)%obj = mp_float_type(water%PONDING1) !PONDING1
-    mp_arr%values(50)%obj = mp_float_type(water%PONDING2) !PONDING2
-    mp_arr%values(51)%obj = mp_int_type(water%ISNOW) !ISNOW integer
-    mp_arr%values(52)%obj = mp_float_type(water%QSNBOT) !QSNBOT
-    mp_arr%values(53)%obj = mp_float_type(water%RUNSUB) !RUNSUB
-    mp_arr%values(54)%obj = mp_float_type(water%PDDUM) !PDDUM
-    mp_arr%values(55)%obj = mp_float_type(water%runsrf_dt) !runsrf_dt
-    mp_arr%values(56)%obj = transfer_values_to_mp(water%FCR ) !FCR array (1:levels%nsoil)
-    mp_arr%values(57)%obj = mp_float_type(water%SICEMAX) !SICEMAX
-    mp_arr%values(58)%obj = mp_float_type(water%FCRMAX) !FCRMAX
-    mp_arr%values(59)%obj = mp_float_type(water%FACC) !FACC
-    mp_arr%values(60)%obj = mp_float_type(water%QDRAIN) !QDRAIN
-    mp_arr%values(61)%obj = mp_float_type(water%DEEPRECH) !DEEPRECH
-    mp_arr%values(62)%obj = mp_float_type(water%ZWT) !ZWT
-    mp_arr%values(63)%obj = mp_float_type(water%ASAT) !ASAT
-    mp_arr%values(64)%obj = mp_float_type(water%SMCWTD) !SMCWTD
+    mp_arr%values(21)%obj = mp_float_type(water%SNEQV) !SNEQV
+    mp_arr%values(22)%obj = mp_float_type(water%SNOWH) !SNOWH
+    mp_arr%values(23)%obj = mp_float_type(water%PONDING) !PONDING
+    mp_arr%values(24)%obj = mp_float_type(water%SNEQVO) !SNEQVO
+    mp_arr%values(25)%obj = mp_float_type(water%QVAP) !QVAP
+    mp_arr%values(26)%obj = mp_float_type(water%QDEW) !QDEW
+    mp_arr%values(27)%obj = mp_float_type(water%QSNSUB) !QSNSUB
+    mp_arr%values(28)%obj = mp_float_type(water%QSEVA) !QSEVA
+    mp_arr%values(29)%obj = mp_float_type(water%QSNFRO) !QSNFRO
+    mp_arr%values(30)%obj = mp_float_type(water%QSDEW) !QSDEW
+    mp_arr%values(31)%obj = mp_float_type(water%QINSUR) !QINSUR
+    mp_arr%values(32)%obj = mp_float_type(water%ACSNOM) !ACSNOM
+    mp_arr%values(33)%obj = mp_float_type(water%RUNSRF) !RUNSRF
+    mp_arr%values(34)%obj = mp_float_type(water%WSLAKE) !WSLAKE
+    mp_arr%values(35)%obj = mp_float_type(water%EVAPOTRANS) !EVAPOTRANS
+    mp_arr%values(36)%obj = mp_float_type(water%ECAN) !ECAN
+    mp_arr%values(37)%obj = mp_float_type(water%ETRAN) !ETRAN
+    mp_arr%values(38)%obj = mp_float_type(water%SNOFLOW) !SNOFLOW
+    mp_arr%values(39)%obj = mp_float_type(water%PONDING1) !PONDING1
+    mp_arr%values(40)%obj = mp_float_type(water%PONDING2) !PONDING2
+    mp_arr%values(41)%obj = mp_float_type(water%QSNBOT) !QSNBOT
+    mp_arr%values(42)%obj = mp_float_type(water%RUNSUB) !RUNSUB
+    mp_arr%values(43)%obj = mp_float_type(water%PDDUM) !PDDUM
+    mp_arr%values(44)%obj = mp_float_type(water%runsrf_dt) !runsrf_dt
+    mp_arr%values(45)%obj = mp_float_type(water%SICEMAX) !SICEMAX
+    mp_arr%values(46)%obj = mp_float_type(water%FCRMAX) !FCRMAX
+    mp_arr%values(47)%obj = mp_float_type(water%FACC) !FACC
+    mp_arr%values(48)%obj = mp_float_type(water%QDRAIN) !QDRAIN
+    mp_arr%values(49)%obj = mp_float_type(water%DEEPRECH) !DEEPRECH
+    mp_arr%values(50)%obj = mp_float_type(water%ZWT) !ZWT
+    mp_arr%values(51)%obj = mp_float_type(water%ASAT) !ASAT
+    mp_arr%values(52)%obj = mp_float_type(water%SMCWTD) !SMCWTD
+    mp_arr%values(53)%obj = mp_int_type(water%ISNOW) !ISNOW integer
+    mp_arr%values(54)%obj = transfer_values_to_mp(water%BTRANI ) !BTRANI array (1:levels%NSOIL)
+    mp_arr%values(55)%obj = transfer_values_to_mp(water%SNICEV ) !SNICEV array (-levels%NSNOW+1:0) # negative indexes
+    mp_arr%values(56)%obj = transfer_values_to_mp(water%EPORE ) !EPORE array (-levels%NSNOW+1:0) # negative indexes
+    mp_arr%values(57)%obj = transfer_values_to_mp(water%SNLIQV ) !SNLIQV array (-levels%NSNOW+1:0) # negative indexes
+    mp_arr%values(58)%obj = transfer_values_to_mp(water%SICE ) !SICE array (1:levels%NSOIL)
+    mp_arr%values(59)%obj = transfer_values_to_mp(water%SH2O ) !SH2O array (1:levels%NSOIL)
+    mp_arr%values(60)%obj = transfer_values_to_mp(water%SMC ) !SMC array (1:levels%NSOIL)
+    mp_arr%values(61)%obj = transfer_values_to_mp(water%SNICE ) !SNICE array (-levels%NSNOW+1:0)
+    mp_arr%values(62)%obj = transfer_values_to_mp(water%SNLIQ ) !SNLIQ array (-levels%NSNOW+1:0)
+    mp_arr%values(63)%obj = transfer_values_to_mp(water%ETRANI ) !ETRANI array (1:levels%NSOIL)
+    mp_arr%values(64)%obj = transfer_values_to_mp(water%FCR ) !FCR array (1:levels%nsoil)
 
 END SUBROUTINE water_serialization
 
@@ -739,16 +732,14 @@ SUBROUTINE water_deserialization (mp_arr, water)
     integer(kind=int64) :: index, sub_index 
 
     do index=1, mp_arr%numelements()
-        if (index == 51) then
+        if (index .LE. 52) then    
+            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
+        else if (index == 53) then
             call get_int(mp_arr%values(index)%obj, deserialized_int_val, status)
-        else if ((index >= 21 .AND. index <=27) .OR. (index >= 30 .AND. index <=33) .OR. (index == 44) .OR. (index == 54) .OR. (index == 59)) then
+        else if (index .GE. 54) then
             if (is_arr(mp_arr%values(index)%obj)) then
                 call get_arr_ref(mp_arr%values(index)%obj, mp_sub_arr, status)
-            else
-                !write to log file
             end if
-        else    
-            call get_real(mp_arr%values(index)%obj, deserialized_val, status)
         end if
         select case(index)
             case(1)
@@ -792,126 +783,126 @@ SUBROUTINE water_deserialization (mp_arr, water)
             case(20)
                 water%BTRAN = deserialized_val
             case(21)
+                water%SNEQV = deserialized_val
+            case(22)
+                water%SNOWH = deserialized_val
+            case(23)
+                water%PONDING = deserialized_val
+            case(24)
+                water%SNEQVO = deserialized_val
+            case(25)
+                water%QVAP = deserialized_val
+            case(26)
+                water%QDEW = deserialized_val
+            case(27)
+                water%QSNSUB = deserialized_val
+            case(28)
+                water%QSEVA = deserialized_val
+            case(29)
+                water%QSNFRO = deserialized_val
+            case(30)
+                water%QSDEW = deserialized_val
+            case(31)
+                water%QINSUR = deserialized_val
+            case(32)
+                water%ACSNOM = deserialized_val
+            case(33)
+                water%RUNSRF = deserialized_val
+            case(34)
+                water%WSLAKE = deserialized_val
+            case(35)
+                water%EVAPOTRANS = deserialized_val
+            case(36)
+                water%ECAN = deserialized_val
+            case(37)
+                water%ETRAN = deserialized_val
+            case(38)
+                water%SNOFLOW = deserialized_val
+            case(39)
+                water%PONDING1 = deserialized_val
+            case(40)
+                water%PONDING2 = deserialized_val
+            case(41)
+                water%QSNBOT = deserialized_val
+            case(42)
+                water%RUNSUB = deserialized_val
+            case(43)
+                water%PDDUM = deserialized_val
+            case(44)
+                water%runsrf_dt = deserialized_val
+            case(45)
+                water%SICEMAX = deserialized_val
+            case(46)
+                water%FCRMAX = deserialized_val
+            case(47)
+                water%FACC = deserialized_val
+            case(48)
+                water%QDRAIN = deserialized_val
+            case(49)
+                water%DEEPRECH = deserialized_val
+            case(50)
+                water%ZWT = deserialized_val
+            case(51)
+                water%ASAT = deserialized_val
+            case(52)
+                water%SMCWTD = deserialized_val
+            case(53)
+                water%ISNOW = deserialized_int_val
+            case(54)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%BTRANI(sub_index) = deserialized_val
                 end do
-            case(22)
+            case(55)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SNICEV(sub_index) = deserialized_val
                 end do
-            case(23)
+            case(56)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%EPORE(sub_index) = deserialized_val
                 end do
-            case(24)
+            case(57)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SNLIQV(sub_index) = deserialized_val
                 end do
-            case(25)
+            case(58)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SICE(sub_index) = deserialized_val
                 end do
-            case(26)
-                water%SNEQV = deserialized_val
-            case(27)
-                water%SNOWH = deserialized_val
-            case(28)
+            case(59)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SH2O(sub_index) = deserialized_val
                 end do
-            case(29)
+            case(60)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SMC(sub_index) = deserialized_val
                 end do
-            case(30)
+            case(61)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SNICE(sub_index) = deserialized_val
                 end do
-            case(31)
+            case(62)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%SNLIQ(sub_index) = deserialized_val
                 end do
-            case(32)
-                water%PONDING = deserialized_val
-            case(33)
-                water%SNEQVO = deserialized_val
-            case(34)
-                water%QVAP = deserialized_val
-            case(35)
-                water%QDEW = deserialized_val
-            case(36)
-                water%QSNSUB = deserialized_val
-            case(37)
-                water%QSEVA = deserialized_val
-            case(38)
-                water%QSNFRO = deserialized_val
-            case(39)
-                water%QSDEW = deserialized_val
-            case(40)
-                water%QINSUR = deserialized_val
-            case(41)
-                water%ACSNOM = deserialized_val
-            case(42)
+            case(63)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%ETRANI(sub_index) = deserialized_val
                 end do
-            case(43)
-                water%RUNSRF = deserialized_val
-            case(44)
-                water%WSLAKE = deserialized_val
-            case(45)
-                water%EVAPOTRANS = deserialized_val
-            case(46)
-                water%ECAN = deserialized_val
-            case(47)
-                water%ETRAN = deserialized_val
-            case(48)
-                water%SNOFLOW = deserialized_val
-            case(49)
-                water%PONDING1 = deserialized_val
-            case(50)
-                water%PONDING2 = deserialized_val
-            case(51)
-                water%ISNOW = deserialized_int_val
-            case(52)
-                water%QSNBOT = deserialized_val
-            case(53)
-                water%RUNSUB = deserialized_val
-            case(54)
-                water%PDDUM = deserialized_val
-            case(55)
-                water%runsrf_dt = deserialized_val
-            case(56)
+            case(64)
                 do sub_index=1, mp_sub_arr%numelements()
                     call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
                     water%FCR(sub_index) = deserialized_val
                 end do
-            case(57)
-                water%SICEMAX = deserialized_val
-            case(58)
-                water%FCRMAX = deserialized_val
-            case(59)
-                water%FACC = deserialized_val
-            case(60)
-                water%QDRAIN = deserialized_val
-            case(61)
-                water%DEEPRECH = deserialized_val
-            case(62)
-                water%ZWT = deserialized_val
-            case(63)
-                water%ASAT = deserialized_val
-            case(64)
-                water%SMCWTD = deserialized_val
         end select
     end do
 END SUBROUTINE water_deserialization
