@@ -4,7 +4,7 @@
 .SUFFIXES: .o .f90
 
 all: user_build_options
-	(cd fdatetime;	make)
+	(cd fdatetime;		make)
 	(cd src;		make)
 	(cd bmi;		make)
 	(cd driver;		make)
