@@ -41,6 +41,11 @@ OBJS = \
         ../src/EnergyModule.o \
         ../src/UtilitiesModule.o \
         ../src/DateTimeUtilsModule.o \
+        ../src/byte_utilities.o \
+        ../src/messagepack_value.o \
+        ../src/messagepack_user.o \
+        ../src/messagepack.o \
+        ../src/StateSerialization.o \
         ../src/RunModule.o \
         ../driver/OutputModule.o \
         ../driver/NoahModularDriver.o \
