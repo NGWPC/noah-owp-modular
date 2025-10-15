@@ -421,14 +421,15 @@ contains
                 call parameters_deserialization (arr, model%parameters)
             end select
           else
-            call write_log("Serialization using messagepack (internal array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+            call write_log("Deserialization using messagepack (internal array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
           end if
         end do
       else
-        call write_log("Serialization using messagepack (external array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
+        call write_log("Deserialization using messagepack (external array) failed!. Error:" // mp%error_message, LOG_LEVEL_FATAL)
       end if
     end if
     deallocate (mpv)
+    deallocate (serialized_data_1b)
     
   END SUBROUTINE deserialize_mp_buffer
 
