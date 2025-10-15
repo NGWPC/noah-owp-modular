@@ -102,15 +102,9 @@ SUBROUTINE forcing_deserialization (mp_arr, forcing)
             case(20)
                 forcing%YEARLEN = deserialized_int_val
             case(21)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    forcing%SOLAD(sub_index) = deserialized_val
-                end do
+                forcing%SOLAD = transfer_values_from_mp(mp_sub_arr)
             case(22)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    forcing%SOLAI(sub_index) = deserialized_val
-                end do
+                forcing%SOLAI = transfer_values_from_mp(mp_sub_arr)
         end select
     end do
 END SUBROUTINE forcing_deserialization
@@ -162,15 +156,9 @@ SUBROUTINE domain_deserialization (mp_arr, domain)
             case(4)
                 domain%nowdate = deserialized_str_val
             case(5)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    domain%DZSNSO(sub_index) = deserialized_val
-                end do
+                domain%DZSNSO = transfer_values_from_mp(mp_sub_arr)
             case(6)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    domain%ZSNSO(sub_index) = deserialized_val
-                end do
+                domain%ZSNSO = transfer_values_from_mp(mp_sub_arr)
         end select
     end do
 END SUBROUTINE domain_deserialization
@@ -531,120 +519,51 @@ SUBROUTINE energy_deserialization (mp_arr, energy)
             case(102)
                 energy%frozen_ground = is_true_val
             case(103)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTDI(sub_index) = deserialized_val
-                end do
+                energy%FTDI = transfer_values_from_mp(mp_sub_arr)
             case(104)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FREVD(sub_index) = deserialized_val
-                end do
+                energy%FREVD = transfer_values_from_mp(mp_sub_arr)
             case(105)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FREGD(sub_index) = deserialized_val
-                end do
+                energy%FREGD = transfer_values_from_mp(mp_sub_arr)
             case(106)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FREVI(sub_index) = deserialized_val
-                end do
+                energy%FREVI = transfer_values_from_mp(mp_sub_arr)
             case(107)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FREGI(sub_index) = deserialized_val
-                end do
+                energy%FREGI = transfer_values_from_mp(mp_sub_arr)
             case(108)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%STC(sub_index) = deserialized_val
-                end do
+                energy%STC = transfer_values_from_mp(mp_sub_arr)
             case(109)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%HCPCT(sub_index) = deserialized_val
-                end do
+                energy%HCPCT = transfer_values_from_mp(mp_sub_arr)
             case(110)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%DF(sub_index) = deserialized_val
-                end do
+                energy%DF = transfer_values_from_mp(mp_sub_arr)
             case(111)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FACT(sub_index) = deserialized_val
-                end do
+                energy%FACT = transfer_values_from_mp(mp_sub_arr)
             case(112)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBD(sub_index) = deserialized_val
-                end do
+                energy%ALBD = transfer_values_from_mp(mp_sub_arr)
             case(113)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBI(sub_index) = deserialized_val
-                end do
+                energy%ALBI = transfer_values_from_mp(mp_sub_arr)
             case(114)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBGRD(sub_index) = deserialized_val
-                end do
+                energy%ALBGRD = transfer_values_from_mp(mp_sub_arr)
             case(115)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBGRI(sub_index) = deserialized_val
-                end do
+                energy%ALBGRI = transfer_values_from_mp(mp_sub_arr)
             case(116)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBSND(sub_index) = deserialized_val
-                end do
+                energy%ALBSND = transfer_values_from_mp(mp_sub_arr)
             case(117)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%ALBSNI(sub_index) = deserialized_val
-                end do
+                energy%ALBSNI = transfer_values_from_mp(mp_sub_arr)
             case(118)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FABD(sub_index) = deserialized_val
-                end do
+                energy%FABD = transfer_values_from_mp(mp_sub_arr)
             case(119)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FABI(sub_index) = deserialized_val
-                end do
+                energy%FABI = transfer_values_from_mp(mp_sub_arr)
             case(120)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTDD(sub_index) = deserialized_val
-                end do
+                energy%FTDD = transfer_values_from_mp(mp_sub_arr)
             case(121)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTID(sub_index) = deserialized_val
-                end do
+                energy%FTID = transfer_values_from_mp(mp_sub_arr)
             case(122)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%FTII(sub_index) = deserialized_val
-                end do
+                energy%FTII = transfer_values_from_mp(mp_sub_arr)
             case(123)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%RHO(sub_index) = deserialized_val
-                end do
+                energy%RHO = transfer_values_from_mp(mp_sub_arr)
             case(124)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    energy%TAU(sub_index) = deserialized_val
-                end do
+                energy%TAU = transfer_values_from_mp(mp_sub_arr)
             case(125)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_int(mp_sub_arr%values(sub_index)%obj, deserialized_int_val, status)
-                    energy%IMELT(sub_index) = deserialized_int_val
-                end do
+                energy%IMELT = transfer_values_from_mp_int(mp_sub_arr)
         end select
     end do   
 END SUBROUTINE energy_deserialization
@@ -849,60 +768,27 @@ SUBROUTINE water_deserialization (mp_arr, water)
             case(53)
                 water%ISNOW = deserialized_int_val
             case(54)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%BTRANI(sub_index) = deserialized_val
-                end do
+                water%BTRANI = transfer_values_from_mp(mp_sub_arr)
             case(55)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SNICEV(sub_index) = deserialized_val
-                end do
+                water%SNICEV = transfer_values_from_mp(mp_sub_arr)
             case(56)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%EPORE(sub_index) = deserialized_val
-                end do
+                water%EPORE = transfer_values_from_mp(mp_sub_arr)
             case(57)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SNLIQV(sub_index) = deserialized_val
-                end do
+                water%SNLIQV = transfer_values_from_mp(mp_sub_arr)
             case(58)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SICE(sub_index) = deserialized_val
-                end do
+                water%SICE = transfer_values_from_mp(mp_sub_arr)
             case(59)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SH2O(sub_index) = deserialized_val
-                end do
+                water%SH2O = transfer_values_from_mp(mp_sub_arr)
             case(60)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SMC(sub_index) = deserialized_val
-                end do
+                water%SMC = transfer_values_from_mp(mp_sub_arr)
             case(61)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SNICE(sub_index) = deserialized_val
-                end do
+                water%SNICE = transfer_values_from_mp(mp_sub_arr)
             case(62)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%SNLIQ(sub_index) = deserialized_val
-                end do
+                water%SNLIQ = transfer_values_from_mp(mp_sub_arr)
             case(63)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%ETRANI(sub_index) = deserialized_val
-                end do
+                water%ETRANI = transfer_values_from_mp(mp_sub_arr)
             case(64)
-                do sub_index=1, mp_sub_arr%numelements()
-                    call get_real(mp_sub_arr%values(sub_index)%obj, deserialized_val, status)
-                    water%FCR(sub_index) = deserialized_val
-                end do
+                water%FCR = transfer_values_from_mp(mp_sub_arr)
         end select
     end do
 END SUBROUTINE water_deserialization
@@ -982,5 +868,20 @@ logical :: status
     end do
 
 END FUNCTION transfer_values_from_mp
+
+FUNCTION transfer_values_from_mp_int (src) RESULT (dest)
+
+class(mp_arr_type), allocatable, intent(in) :: src
+integer, allocatable, dimension(:) :: dest
+integer(kind=int64) :: deserialized_int_val
+integer(kind=int64) :: index
+logical :: status
+    
+    do index=1, src%numelements()
+        call get_int(src%values(index)%obj, deserialized_int_val, status)
+        dest(index) = deserialized_int_val
+    end do
+
+END FUNCTION transfer_values_from_mp_int
 
 END Module
