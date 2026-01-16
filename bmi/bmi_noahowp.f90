@@ -620,10 +620,7 @@ contains
     character (len=*), intent(in) :: name
     character (len=*), intent(out) :: type
     integer :: bmi_status
-    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "uint64" !pads spaces upto 2048.
-    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "uint64" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "character" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_msg = "int" !pads spaces upto 2048
 
     select case(name)
     case('ACSNOM', 'AXAJ', 'BEXP', 'BXAJ', 'CMC', 'CWP', 'DKSAT',          &
@@ -638,17 +635,8 @@ contains
     case('ISNOW')
        type = "integer"
        bmi_status = BMI_SUCCESS
-    case ('serialization_create')
-       type = ser_create
-       bmi_status = BMI_SUCCESS
-    case ('serialization_size')
-       type = ser_size
-       bmi_status = BMI_SUCCESS
-    case ('serialization_state')
-       type = ser_state
-       bmi_status = BMI_SUCCESS
-    case ('serialization_free')
-       type = ser_free
+    case ('serialization_create', 'serialization_size', 'serialization_state', 'serialization_free')
+       type = ser_msg
        bmi_status = BMI_SUCCESS
     case default
        type = "-"
