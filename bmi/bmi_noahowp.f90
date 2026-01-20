@@ -620,10 +620,7 @@ contains
     character (len=*), intent(in) :: name
     character (len=*), intent(out) :: type
     integer :: bmi_status
-    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "uint64" !pads spaces upto 2048.
-    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "uint64" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "character" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_msg = "int" !pads spaces upto 2048
 
     select case(name)
     case('ACSNOM', 'AXAJ', 'BEXP', 'BXAJ', 'CMC', 'CWP', 'DKSAT',          &
@@ -638,17 +635,8 @@ contains
     case('ISNOW')
        type = "integer"
        bmi_status = BMI_SUCCESS
-    case ('serialization_create')
-       type = ser_create
-       bmi_status = BMI_SUCCESS
-    case ('serialization_size')
-       type = ser_size
-       bmi_status = BMI_SUCCESS
-    case ('serialization_state')
-       type = ser_state
-       bmi_status = BMI_SUCCESS
-    case ('serialization_free')
-       type = ser_free
+    case ('serialization_create', 'serialization_size', 'serialization_state', 'serialization_free')
+       type = ser_msg
        bmi_status = BMI_SUCCESS
     case default
        type = "-"
@@ -875,6 +863,12 @@ contains
     case("XXAJ")
       size = sizeof(parameters%XXAJ)        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
+    case("serialization_create", "serialization_size", "serialization_free")
+      size = storage_size(0_int32) / 8
+      bmi_status = BMI_SUCCESS
+    case("serialization_state")
+      size = 1
+      bmi_status = BMI_SUCCESS
     case default
        size = -1
        bmi_status = BMI_FAILURE
@@ -892,7 +886,7 @@ contains
     integer :: s1, s2, s3, grid, grid_size, item_size
 
     if (name == "serialization_create" .or. name == "serialization_size") then
-      nbytes = storage_size(0_int64)/8 !returns size in bits. So, divide by 8 for bytes.
+      nbytes = storage_size(0_int32)/8 !returns size in bits. So, divide by 8 for bytes.
       bmi_status = BMI_SUCCESS
     else if (name == "serialization_state") then
       if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
@@ -900,7 +894,7 @@ contains
          call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
          bmi_status = BMI_FAILURE
       else
-         nbytes = size(this%model%serialization_buffer,KIND=int64)
+         nbytes = size(this%model%serialization_buffer)
          bmi_status = BMI_SUCCESS
       end if
     else if (name == "serialization_free") then 
@@ -959,7 +953,7 @@ contains
             call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
             bmi_status = BMI_FAILURE
         else
-            dest = size(this%model%serialization_buffer,KIND=int64)
+            dest = size(this%model%serialization_buffer)
             bmi_status = BMI_SUCCESS
          end if
     case default
