@@ -863,6 +863,12 @@ contains
     case("XXAJ")
       size = sizeof(parameters%XXAJ)        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
+    case("serialization_create", "serialization_size", "serialization_free")
+      size = storage_size(0_int32) / 8
+      bmi_status = BMI_SUCCESS
+    case("serialization_state")
+      size = 1
+      bmi_status = BMI_SUCCESS
     case default
        size = -1
        bmi_status = BMI_FAILURE
