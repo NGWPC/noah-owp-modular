@@ -337,7 +337,7 @@ contains
     end associate ! terminate associate block
   END SUBROUTINE solve_noahowp
 
-  SUBROUTINE reset_model_time(this%model, exec_status)
+  SUBROUTINE reset_model_time(model, exec_status)
     type(noahowp_type), intent(inout) :: model
     exec_status = 1
     ! reset time variables to the beginning
