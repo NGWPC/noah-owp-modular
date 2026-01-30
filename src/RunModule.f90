@@ -341,6 +341,8 @@ contains
     type(noahowp_type), intent(inout) :: model
     exec_status = 1
     ! reset time variables to the beginning
+    domain%nowdate   = domain%startdate ! start the model with nowdate = startdate
+    forcing_timestep = domain%dt        ! integer timestep for some subroutine calls
     domain%itime     = 1                ! initialize the time loop counter at 1
     domain%time_dbl  = 0.d0             ! start model run at t = 0; bmi noahowp_current_time reads this value
     exec_status = 0
