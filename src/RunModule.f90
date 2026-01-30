@@ -337,6 +337,15 @@ contains
     end associate ! terminate associate block
   END SUBROUTINE solve_noahowp
 
+  SUBROUTINE reset_model_time(this%model, exec_status)
+    type(noahowp_type), intent(inout) :: model
+    exec_status = 1
+    ! reset time variables to the beginning
+    domain%itime     = 1                ! initialize the time loop counter at 1
+    domain%time_dbl  = 0.d0             ! start model run at t = 0; bmi noahowp_current_time reads this value
+    exec_status = 0
+  END SUBROUTINE reset_model_time
+
   SUBROUTINE new_serialization_request (model, exec_status)
     type(noahowp_type), intent(inout) :: model
     class(msgpack), allocatable :: mp
