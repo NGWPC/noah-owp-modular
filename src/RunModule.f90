@@ -339,12 +339,12 @@ contains
 
   SUBROUTINE reset_model_time(model, exec_status)
     type(noahowp_type), intent(inout) :: model
+    integer(kind=int64), intent(out) :: exec_status
     exec_status = 1
     ! reset time variables to the beginning
-    domain%nowdate   = domain%startdate ! start the model with nowdate = startdate
-    forcing_timestep = domain%dt        ! integer timestep for some subroutine calls
-    domain%itime     = 1                ! initialize the time loop counter at 1
-    domain%time_dbl  = 0.d0             ! start model run at t = 0; bmi noahowp_current_time reads this value
+    model%domain%nowdate   = model%domain%startdate ! start the model with nowdate = startdate
+    model%domain%itime     = 1                ! initialize the time loop counter at 1
+    model%domain%time_dbl  = 0.d0             ! start model run at t = 0; bmi noahowp_current_time reads this value
     exec_status = 0
   END SUBROUTINE reset_model_time
 
