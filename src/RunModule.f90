@@ -351,33 +351,28 @@ contains
   SUBROUTINE new_serialization_request (model, exec_status)
     type(noahowp_type), intent(inout) :: model
     class(msgpack), allocatable :: mp
-    class(mp_arr_type), allocatable :: mp_sub_arr
-    class(mp_arr_type), allocatable :: mp_arr
+    class(mp_arr_type), allocatable :: mp_forcing_arr, mp_domain_arr, mp_energy_arr 
+    class(mp_arr_type), allocatable :: mp_water_arr, mp_parameters_arr
+    type(mp_arr_type) :: mp_arr
     byte, dimension(:), allocatable :: serialization_buffer
     integer(kind=int64), intent(out) :: exec_status
 
     mp = msgpack()
-    mp_arr = mp_arr_type(5) !forcing, domain, energy,water, parameters
+    mp_arr = mp_arr_type(5) !forcing, energy, domain, water, parameters
+    call forcing_serialization(model%forcing, mp_forcing_arr)
+    allocate(mp_arr%values(1)%obj, source = mp_forcing_arr) !forcing
 
-    call forcing_serialization(model%forcing,mp_sub_arr)
-    mp_arr%values(1)%obj = mp_sub_arr !forcing
-    deallocate(mp_sub_arr)
+	  call energy_serialization(model%energy,mp_energy_arr)
+    allocate(mp_arr%values(2)%obj, source = mp_energy_arr) !energy
 
-    call energy_serialization(model%energy,mp_sub_arr)
-    mp_arr%values(2)%obj = mp_sub_arr !energy
-    deallocate(mp_sub_arr)
+    call domain_serialization(model%domain,mp_domain_arr)
+    allocate(mp_arr%values(3)%obj, source = mp_domain_arr) !domain
 
-    call domain_serialization(model%domain,mp_sub_arr)
-    mp_arr%values(3)%obj = mp_sub_arr !domain
-    deallocate(mp_sub_arr)
+    call water_serialization(model%water,mp_water_arr)
+    allocate(mp_arr%values(4)%obj, source = mp_water_arr) !water
 
-    call water_serialization(model%water,mp_sub_arr)
-    mp_arr%values(4)%obj = mp_sub_arr !water
-    deallocate(mp_sub_arr)
-
-    call parameters_serialization(model%parameters,mp_sub_arr)
-    mp_arr%values(5)%obj = mp_sub_arr !parameters
-    deallocate(mp_sub_arr)
+    call parameters_serialization(model%parameters,mp_parameters_arr)
+    allocate(mp_arr%values(5)%obj, source = mp_parameters_arr) !parameters
 
     ! pack the data
     call mp%pack_alloc(mp_arr, serialization_buffer)
