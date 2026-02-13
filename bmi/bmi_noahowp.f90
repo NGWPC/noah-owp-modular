@@ -622,7 +622,7 @@ contains
     integer :: bmi_status
     character(len=BMI_MAX_TYPE_NAME) :: ser_create = "int" !pads spaces upto 2048.
     character(len=BMI_MAX_TYPE_NAME) :: ser_size = "int" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "character" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "int" !pads spaces upto 2048
     character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
 
     select case(name)
@@ -968,6 +968,14 @@ contains
             dest = size(this%model%serialization_buffer)
             bmi_status = BMI_SUCCESS
          end if
+    case("serialization_state")
+        if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
+            call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+            bmi_status = BMI_FAILURE
+        else
+            dest = transfer(this%model%serialization_buffer, dest)
+            bmi_status = BMI_SUCCESS
+         end if
     case default
        dest(:) = -1
        bmi_status = BMI_FAILURE
@@ -1172,9 +1180,6 @@ contains
      integer :: n_elements
 
      select case(name)
-      case("serialization_state")
-          dest_ptr = this%model%serialization_buffer
-          bmi_status = BMI_SUCCESS
       case default
           bmi_status = BMI_FAILURE
           call write_log("bmi:noahowp_get_ptr_int: invalid var " // name, LOG_LEVEL_WARNING)
