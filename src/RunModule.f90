@@ -382,7 +382,7 @@ contains
     else
         exec_status = 0
         model%serialization_buffer = serialization_buffer
-        call write_log("Serialization using messagepack successful!", LOG_LEVEL_INFO)
+        call write_log("Serialization using messagepack successful!", LOG_LEVEL_DEBUG)
     end if
   END SUBROUTINE new_serialization_request
 

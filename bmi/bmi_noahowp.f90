@@ -1304,7 +1304,7 @@ contains
          call new_serialization_request(this%model, exec_status)
          if (exec_status == 0) then
             bmi_status = BMI_SUCCESS
-            call write_log("Serialization for state saving complete", LOG_LEVEL_INFO)
+            call write_log("Serialization for state saving complete", LOG_LEVEL_DEBUG)
          else
             bmi_status = BMI_FAILURE
             call write_log(" Failed to create serialized data for state saving", LOG_LEVEL_FATAL) 
@@ -1321,7 +1321,7 @@ contains
          call reset_model_time(this%model, exec_status)
          if (exec_status == 0) then
             bmi_status = BMI_SUCCESS
-            call write_log("Time variables reset successfully for state restoring", LOG_LEVEL_INFO)
+            call write_log("Time variables reset successfully for state restoring", LOG_LEVEL_DEBUG)
          else
             bmi_status = BMI_FAILURE
             call write_log(" Failed to reset time variables for state restoring", LOG_LEVEL_FATAL) 
