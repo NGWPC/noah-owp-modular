@@ -33,6 +33,7 @@ module RunModule
     type(water_type)      :: water
     type(forcing_type)    :: forcing
     type(energy_type)     :: energy
+    integer               :: serialization_size
     byte, dimension(:), allocatable :: serialization_buffer
   end type noahowp_type
 contains
@@ -58,6 +59,8 @@ contains
       !---------------------------------------------------------------------
       !  initialize
       !---------------------------------------------------------------------
+      model%serialization_size = -1
+
       call namelist%ReadNamelist(config_filename)
 
       call levels%Init
@@ -356,6 +359,8 @@ contains
     type(mp_arr_type) :: mp_arr
     byte, dimension(:), allocatable :: serialization_buffer
     integer(kind=int64), intent(out) :: exec_status
+    integer :: ser_size
+    byte, dimension(4) :: byte_size
 
     mp = msgpack()
     mp_arr = mp_arr_type(5) !forcing, energy, domain, water, parameters
@@ -381,7 +386,14 @@ contains
         exec_status = 1
     else
         exec_status = 0
-        model%serialization_buffer = serialization_buffer
+        if (allocated(model%serialization_buffer)) then
+          deallocate(model%serialization_buffer)
+        end if
+        ser_size = size(serialization_buffer)
+        allocate(model%serialization_buffer(ser_size + 4))
+        byte_size = TRANSFER(ser_size, byte_size, size=4)
+        model%serialization_buffer(1:4) = byte_size(1:4)
+        model%serialization_buffer(5:) = serialization_buffer
         call write_log("Serialization using messagepack successful!", LOG_LEVEL_DEBUG)
     end if
   END SUBROUTINE new_serialization_request
@@ -396,11 +408,13 @@ contains
     class(mp_arr_type), allocatable :: arr
     logical :: error, status
     integer(kind=int64) :: index
-    
+
     mp = msgpack()
     !convert integer(4) to integer(1) for messagepack
-    allocate(serialized_data_1b(size(serialized_data, 1, int64)*4_int64))
-    serialized_data_1b = TRANSFER(serialized_data, serialized_data_1b)
+    !the exact size of the serialized data is stored as the first value. This was needed since padding coming from the size not being divisble by 4 caused an error when deserializing using messagepack
+    allocate(serialized_data_1b(serialized_data(1)))
+    serialized_data_1b = TRANSFER(serialized_data(2:), serialized_data_1b, size=serialized_data(1))
+
     call mp%unpack(serialized_data_1b, mpv)
     if (is_arr(mpv)) then
       call get_arr_ref(mpv, arr_all, status) 
