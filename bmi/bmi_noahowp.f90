@@ -724,6 +724,7 @@ contains
     character (len=*), intent(in) :: name
     integer, intent(out) :: size
     integer :: bmi_status
+    double precision :: d
 
     associate(forcing    => this%model%forcing,   &
               water      => this%model%water,     &
@@ -878,14 +879,12 @@ contains
     case("XXAJ")
       size = sizeof(parameters%XXAJ)        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
-    case("serialization_create", "serialization_size", "serialization_free")
-      size = storage_size(0_int32)/8
-      bmi_status = BMI_SUCCESS
-    case("serialization_state")
-      size = 1
+    case("serialization_create", "serialization_size", "serialization_free", "serialization_state")
+      size = sizeof(this%model%serialization_size)
       bmi_status = BMI_SUCCESS
     case("reset_time")
-      bmi_status = noahowp_var_nbytes(this, name, size)
+      size = sizeof(d)
+      bmi_status = BMI_SUCCESS
     case default
        size = -1
        bmi_status = BMI_FAILURE
@@ -901,31 +900,21 @@ contains
     integer, intent(out) :: nbytes
     integer :: bmi_status
     integer :: s1, s2, s3, grid, grid_size, item_size
-    double precision :: r
 
-    if (name == "reset_time") then
-      nbytes = storage_size(r) / 8
-      bmi_status = BMI_SUCCESS
-    else if (name == "serialization_create" .or. name == "serialization_size") then
-      nbytes = storage_size(0_int32)/8 !returns size in bits. So, divide by 8 for bytes.
-      bmi_status = BMI_SUCCESS
+    if (name == "reset_time" .or. name == "serialization_create" .or. name == "serialization_size" .or. name == "serialization_free") then
+      bmi_status = noahowp_var_itemsize(this, name, nbytes)
     else if (name == "serialization_state") then
-      if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
-        if (this%model%serialization_size > 0) then
-          nbytes = this%model%serialization_size
-          bmi_status = BMI_SUCCESS
-        else
-          nbytes = -1
-          call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
-          bmi_status = BMI_FAILURE
-        end if
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        nbytes = sizeof(this%model%serialization_buffer)
+        bmi_status = BMI_SUCCESS
+      else if (this%model%serialization_size > 0) then
+        nbytes = this%model%serialization_size
+        bmi_status = BMI_SUCCESS
       else
-         nbytes = size(this%model%serialization_buffer,KIND=int64)
-         bmi_status = BMI_SUCCESS
+        nbytes = -1
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
       end if
-    else if (name == "serialization_free") then 
-      nbytes = storage_size(0_int32)/8 !returns size in bits. So, divide by 8 for bytes.
-      bmi_status = BMI_SUCCESS
     else
       s1 = this%get_var_grid(name, grid)
       s2 = this%get_grid_size(grid, grid_size)
@@ -979,7 +968,7 @@ contains
             call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
             bmi_status = BMI_FAILURE
         else
-            dest = size(this%model%serialization_buffer)
+            dest = sizeof(this%model%serialization_buffer)
             bmi_status = BMI_SUCCESS
          end if
     case("serialization_state")
@@ -987,7 +976,7 @@ contains
             call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
             bmi_status = BMI_FAILURE
         else
-            dest = transfer(this%model%serialization_buffer, dest)
+            dest(:) = this%model%serialization_buffer(:)
             bmi_status = BMI_SUCCESS
          end if
     case default

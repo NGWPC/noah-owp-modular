@@ -34,7 +34,7 @@ module RunModule
     type(forcing_type)    :: forcing
     type(energy_type)     :: energy
     integer               :: serialization_size
-    byte, dimension(:), allocatable :: serialization_buffer
+    integer, dimension(:), allocatable :: serialization_buffer
   end type noahowp_type
 contains
 
@@ -359,8 +359,7 @@ contains
     type(mp_arr_type) :: mp_arr
     byte, dimension(:), allocatable :: serialization_buffer
     integer(kind=int64), intent(out) :: exec_status
-    integer :: ser_size
-    byte, dimension(4) :: byte_size
+    integer :: ser_size, ser_ints
 
     mp = msgpack()
     mp_arr = mp_arr_type(5) !forcing, energy, domain, water, parameters
@@ -390,10 +389,10 @@ contains
           deallocate(model%serialization_buffer)
         end if
         ser_size = size(serialization_buffer)
-        allocate(model%serialization_buffer(ser_size + 4))
-        byte_size = TRANSFER(ser_size, byte_size, size=4)
-        model%serialization_buffer(1:4) = byte_size(1:4)
-        model%serialization_buffer(5:) = serialization_buffer
+        ser_ints = ser_size / sizeof(ser_size)
+        allocate(model%serialization_buffer(ser_ints + 1))
+        model%serialization_buffer(1) = ser_size
+        model%serialization_buffer(2:) = transfer(serialization_buffer, model%serialization_buffer(2:), ser_ints)
         call write_log("Serialization using messagepack successful!", LOG_LEVEL_DEBUG)
     end if
   END SUBROUTINE new_serialization_request
