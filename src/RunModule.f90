@@ -389,7 +389,7 @@ contains
           deallocate(model%serialization_buffer)
         end if
         ser_size = size(serialization_buffer)
-        ser_ints = ser_size / sizeof(ser_size)
+        ser_ints = CEILING(real(ser_size) / sizeof(ser_size))
         allocate(model%serialization_buffer(ser_ints + 1))
         model%serialization_buffer(1) = ser_size
         model%serialization_buffer(2:) = transfer(serialization_buffer, model%serialization_buffer(2:), ser_ints)
