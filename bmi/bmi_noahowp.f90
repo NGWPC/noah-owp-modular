@@ -954,6 +954,8 @@ contains
     character (len=*), intent(in) :: name
     integer, intent(inout) :: dest(:)
     integer :: bmi_status
+    character(len=20) :: dest_size
+    character(len=20) :: ser_size
 
     select case(name)
 !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR INTEGER VARS =================
@@ -961,24 +963,33 @@ contains
 !        dest = [this%model%id]
 !        bmi_status = BMI_SUCCESS
     case("ISNOW")
-       dest(:) = this%model%water%ISNOW
-       bmi_status = BMI_SUCCESS
+      dest(:) = this%model%water%ISNOW
+      bmi_status = BMI_SUCCESS
     case("serialization_size")
-        if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
-            call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
-            bmi_status = BMI_FAILURE
-        else
-            dest = size(this%model%serialization_buffer)
-            bmi_status = BMI_SUCCESS
-         end if
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        dest(:) = size(this%model%serialization_buffer)
+        bmi_status = BMI_SUCCESS
+      else
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
+      end if
     case("serialization_state")
-        if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
-            call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
-            bmi_status = BMI_FAILURE
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        if(size(dest) == size(this%model%serialization_buffer)) then
+          dest(:) = this%model%serialization_buffer(:)
+          bmi_status = BMI_SUCCESS
         else
-            dest(:) = this%model%serialization_buffer(:)
-            bmi_status = BMI_SUCCESS
-         end if
+          write(dest_size, "(I20)") size(dest)
+          write(ser_size, "(I20)") size(this%model%serialization_buffer)
+          call write_log("The destination size (" // trim(dest_size) &
+            // ") does not match the serializations size (" // trim(ser_size) // ")", &
+            LOG_LEVEL_SEVERE)
+          bmi_status = BMI_FAILURE
+        end if
+      else
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
+      end if
     case default
        dest(:) = -1
        bmi_status = BMI_FAILURE
