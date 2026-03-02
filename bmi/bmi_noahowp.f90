@@ -967,7 +967,7 @@ contains
       bmi_status = BMI_SUCCESS
     case("serialization_size")
       if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
-        dest(:) = size(this%model%serialization_buffer)
+        dest(:) = sizeof(this%model%serialization_buffer)
         bmi_status = BMI_SUCCESS
       else
         call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
