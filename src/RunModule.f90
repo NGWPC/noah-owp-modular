@@ -33,7 +33,8 @@ module RunModule
     type(water_type)      :: water
     type(forcing_type)    :: forcing
     type(energy_type)     :: energy
-    byte, dimension(:), allocatable :: serialization_buffer
+    integer               :: serialization_size
+    integer, dimension(:), allocatable :: serialization_buffer
   end type noahowp_type
 contains
 
@@ -58,6 +59,8 @@ contains
       !---------------------------------------------------------------------
       !  initialize
       !---------------------------------------------------------------------
+      model%serialization_size = -1
+
       call namelist%ReadNamelist(config_filename)
 
       call levels%Init
@@ -337,36 +340,43 @@ contains
     end associate ! terminate associate block
   END SUBROUTINE solve_noahowp
 
+  SUBROUTINE reset_model_time(model, exec_status)
+    type(noahowp_type), intent(inout) :: model
+    integer(kind=int64), intent(out) :: exec_status
+    exec_status = 1
+    ! reset time variables to the beginning
+    model%domain%nowdate   = model%domain%startdate ! start the model with nowdate = startdate
+    model%domain%itime     = 1                ! initialize the time loop counter at 1
+    model%domain%time_dbl  = 0.d0             ! start model run at t = 0; bmi noahowp_current_time reads this value
+    exec_status = 0
+  END SUBROUTINE reset_model_time
+
   SUBROUTINE new_serialization_request (model, exec_status)
     type(noahowp_type), intent(inout) :: model
     class(msgpack), allocatable :: mp
-    class(mp_arr_type), allocatable :: mp_sub_arr
-    class(mp_arr_type), allocatable :: mp_arr
+    class(mp_arr_type), allocatable :: mp_forcing_arr, mp_domain_arr, mp_energy_arr 
+    class(mp_arr_type), allocatable :: mp_water_arr, mp_parameters_arr
+    type(mp_arr_type) :: mp_arr
     byte, dimension(:), allocatable :: serialization_buffer
     integer(kind=int64), intent(out) :: exec_status
+    integer :: ser_size, ser_ints
 
     mp = msgpack()
-    mp_arr = mp_arr_type(5) !forcing, domain, energy,water, parameters
+    mp_arr = mp_arr_type(5) !forcing, energy, domain, water, parameters
+    call forcing_serialization(model%forcing, mp_forcing_arr)
+    allocate(mp_arr%values(1)%obj, source = mp_forcing_arr) !forcing
 
-    call forcing_serialization(model%forcing,mp_sub_arr)
-    mp_arr%values(1)%obj = mp_sub_arr !forcing
-    deallocate(mp_sub_arr)
+	  call energy_serialization(model%energy,mp_energy_arr)
+    allocate(mp_arr%values(2)%obj, source = mp_energy_arr) !energy
 
-    call energy_serialization(model%energy,mp_sub_arr)
-    mp_arr%values(2)%obj = mp_sub_arr !energy
-    deallocate(mp_sub_arr)
+    call domain_serialization(model%domain,mp_domain_arr)
+    allocate(mp_arr%values(3)%obj, source = mp_domain_arr) !domain
 
-    call domain_serialization(model%domain,mp_sub_arr)
-    mp_arr%values(3)%obj = mp_sub_arr !domain
-    deallocate(mp_sub_arr)
+    call water_serialization(model%water,mp_water_arr)
+    allocate(mp_arr%values(4)%obj, source = mp_water_arr) !water
 
-    call water_serialization(model%water,mp_sub_arr)
-    mp_arr%values(4)%obj = mp_sub_arr !water
-    deallocate(mp_sub_arr)
-
-    call parameters_serialization(model%parameters,mp_sub_arr)
-    mp_arr%values(5)%obj = mp_sub_arr !parameters
-    deallocate(mp_sub_arr)
+    call parameters_serialization(model%parameters,mp_parameters_arr)
+    allocate(mp_arr%values(5)%obj, source = mp_parameters_arr) !parameters
 
     ! pack the data
     call mp%pack_alloc(mp_arr, serialization_buffer)
@@ -375,8 +385,15 @@ contains
         exec_status = 1
     else
         exec_status = 0
-        model%serialization_buffer = serialization_buffer
-        call write_log("Serialization using messagepack successful!", LOG_LEVEL_INFO)
+        if (allocated(model%serialization_buffer)) then
+          deallocate(model%serialization_buffer)
+        end if
+        ser_size = size(serialization_buffer)
+        ser_ints = CEILING(real(ser_size) / sizeof(ser_size))
+        allocate(model%serialization_buffer(ser_ints + 1))
+        model%serialization_buffer(1) = ser_size
+        model%serialization_buffer(2:) = transfer(serialization_buffer, model%serialization_buffer(2:))
+        call write_log("Serialization using messagepack successful!", LOG_LEVEL_DEBUG)
     end if
   END SUBROUTINE new_serialization_request
 
@@ -390,11 +407,13 @@ contains
     class(mp_arr_type), allocatable :: arr
     logical :: error, status
     integer(kind=int64) :: index
-    
+
     mp = msgpack()
     !convert integer(4) to integer(1) for messagepack
-    allocate(serialized_data_1b(size(serialized_data, 1, int64)*4_int64))
-    serialized_data_1b = TRANSFER(serialized_data, serialized_data_1b)
+    !the exact size of the serialized data is stored as the first value. This was needed since padding coming from the size not being divisble by 4 caused an error when deserializing using messagepack
+    allocate(serialized_data_1b(serialized_data(1)))
+    serialized_data_1b = TRANSFER(serialized_data(2:), serialized_data_1b, size=serialized_data(1))
+
     call mp%unpack(serialized_data_1b, mpv)
     if (is_arr(mpv)) then
       call get_arr_ref(mpv, arr_all, status) 
