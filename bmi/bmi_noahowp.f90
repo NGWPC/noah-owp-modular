@@ -194,14 +194,38 @@ contains
     class (bmi_noahowp), intent(out) :: this
     character (len=*), intent(in) :: config_file
     integer :: bmi_status
+    character(len=512) :: msg
+    character(len=64)  :: dt_str, ntime_str
 
-    !call create_logger()
     call write_log("Initializing NOAHOWP BMI", LOG_LEVEL_INFO)
-    if (len(config_file) > 0) then
+
+    if (len_trim(config_file) > 0) then
+       write(msg, '(A,A)') "NOAHOWP BMI config file: ", trim(config_file)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
+
        call initialize_from_file(this%model, config_file)
+
+       write(dt_str, '(F20.6)') dble(this%model%domain%dt)
+       write(ntime_str, '(I0)') this%model%domain%ntime
+
+       write(msg, '(A,A)') "NOAHOWP effective startdate: ", trim(this%model%domain%startdate)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
+
+       write(msg, '(A,A)') "NOAHOWP effective enddate: ", trim(this%model%domain%enddate)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
+
+       write(msg, '(A,A)') "NOAHOWP effective nowdate: ", trim(this%model%domain%nowdate)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
+
+       write(msg, '(A,A)') "NOAHOWP effective dt: ", trim(dt_str)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
+
+       write(msg, '(A,A)') "NOAHOWP effective ntime: ", trim(ntime_str)
+       call write_log(trim(msg), LOG_LEVEL_INFO)
     else
-       !call initialize_from_defaults(this%model)
+       call write_log("NOAHOWP BMI initialize received empty config_file", LOG_LEVEL_WARNING)
     end if
+
     bmi_status = BMI_SUCCESS
   end function noahowp_initialize
 
