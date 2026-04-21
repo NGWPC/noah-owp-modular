@@ -452,4 +452,63 @@ contains
     
   END SUBROUTINE deserialize_mp_buffer
 
+  SUBROUTINE apply_realization_time_config(model, start_utime, end_utime, dt_seconds, exec_status)
+    implicit none
+
+    type(noahowp_type), intent(inout) :: model
+    integer(kind=int64), intent(in) :: start_utime
+    integer(kind=int64), intent(in) :: end_utime
+    integer(kind=int64), intent(in) :: dt_seconds
+    integer(kind=int64), intent(out) :: exec_status
+
+    integer :: start_yr, start_mo, start_dy, start_hr, start_min, start_sec
+    integer :: end_yr, end_mo, end_dy, end_hr, end_min, end_sec
+    character(len=12) :: startdate_str
+    character(len=12) :: enddate_str
+
+    exec_status = 1
+
+    if (dt_seconds <= 0_int64) then
+      call write_log("apply_realization_time_config: dt_seconds must be positive", LOG_LEVEL_FATAL)
+      return
+    end if
+
+    if (end_utime <= start_utime) then
+      call write_log("apply_realization_time_config: end_utime must be greater than start_utime", LOG_LEVEL_FATAL)
+      return
+    end if
+
+    call unix_to_date(dble(start_utime), start_yr, start_mo, start_dy, start_hr, start_min, start_sec)
+    call unix_to_date(dble(end_utime), end_yr, end_mo, end_dy, end_hr, end_min, end_sec)
+
+    write(startdate_str, '(I4.4,I2.2,I2.2,I2.2,I2.2)') start_yr, start_mo, start_dy, start_hr, start_min
+    write(enddate_str,   '(I4.4,I2.2,I2.2,I2.2,I2.2)') end_yr, end_mo, end_dy, end_hr, end_min
+
+    model%namelist%startdate = startdate_str
+    model%namelist%enddate   = enddate_str
+    model%namelist%dt        = int(dt_seconds)
+
+    model%domain%startdate      = startdate_str
+    model%domain%enddate        = enddate_str
+    model%domain%start_datetime = start_utime
+    model%domain%end_datetime   = end_utime
+    model%domain%dt             = int(dt_seconds)
+
+    model%domain%nowdate   = model%domain%startdate
+    model%domain%itime     = 1
+    model%domain%time_dbl  = 0.d0
+
+    if (allocated(model%domain%sim_datetimes)) then
+      deallocate(model%domain%sim_datetimes)
+    end if
+
+    call get_utime_list(model%domain%start_datetime, model%domain%end_datetime, model%domain%dt, model%domain%sim_datetimes)
+    model%domain%ntime = size(model%domain%sim_datetimes)
+
+    call write_log("NOAHOWP realization time applied:", LOG_LEVEL_INFO)
+    call write_log("  startdate=" // trim(model%domain%startdate), LOG_LEVEL_INFO)
+    call write_log("  enddate=" // trim(model%domain%enddate), LOG_LEVEL_INFO)
+
+    exec_status = 0
+  END SUBROUTINE apply_realization_time_config
 end module RunModule

@@ -15,6 +15,10 @@ module bminoahowp
   type, extends (bmi) :: bmi_noahowp
      private
      type (noahowp_type) :: model
+
+     integer(kind=int64) :: realization_start_utime = -1_int64
+     integer(kind=int64) :: realization_end_utime   = -1_int64
+     integer(kind=int64) :: realization_dt_seconds  = -1_int64
    contains
      procedure :: get_component_name => noahowp_component_name
      procedure :: get_input_item_count => noahowp_input_item_count
@@ -321,6 +325,9 @@ contains
     case('BEXP','DKSAT','SMCMAX')
          grid = 2
          bmi_status = BMI_SUCCESS
+    case('reset_time', 'ngen_realization_start_time', 'ngen_realization_end_time', 'ngen_realization_dt')
+         grid = 0
+         bmi_status = BMI_SUCCESS
     case default
        grid = -1
        call write_log("bmi:noahowp_var_grid: invalid variable " // name // ". Grid set to -1", LOG_LEVEL_WARNING)
@@ -620,15 +627,15 @@ contains
     character (len=*), intent(in) :: name
     character (len=*), intent(out) :: type
     integer :: bmi_status
-    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "int" !pads spaces upto 2048.
-    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "int" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "int" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "int"
+    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "int"
+    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "int"
+    character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int"
 
     select case(name)
     case('ACSNOM', 'AXAJ', 'BEXP', 'BXAJ', 'CMC', 'CWP', 'DKSAT',          &
          'ECAN', 'ETRAN', 'EVAPOTRANS', 'FIRA', 'FRZX', 'FSA', 'FSH',      &
-         'FSNO', 'GH', 'HVT', 'KDT', 'LH', 'LWDN', 'MFSNO', 'MP',          &
+         'FSNO', 'GH', 'HVT', 'KDT', 'LH', 'LWDN', 'MFSNO', 'MP', &
          'PRCPNONC', 'Q2', 'QINSUR', 'QRAIN', 'QSEVA', 'QSNOW', 'REFKDT',  &
          'RSURF_EXP', 'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', &
          'SMCMAX', 'SNEQV', 'SNLIQ', 'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG',  &
@@ -650,7 +657,7 @@ contains
     case ('serialization_free')
        type = ser_free
        bmi_status = BMI_SUCCESS
-    case ("reset_time")
+    case ("reset_time", "ngen_realization_start_time", "ngen_realization_end_time", "ngen_realization_dt")
        type = "double"
        bmi_status = BMI_SUCCESS
     case default
@@ -710,6 +717,9 @@ contains
     case("SMCMAX")
        units = 'volumetric'
        bmi_status = BMI_SUCCESS
+    case("reset_time", "ngen_realization_start_time", "ngen_realization_end_time", "ngen_realization_dt")
+       units = "s"
+       bmi_status = BMI_SUCCESS
     case default
        units = "-"
        call write_log("bmi:noahowp_var_units: invalid var " // name // ". unit value set to '-'", LOG_LEVEL_WARNING)
@@ -726,6 +736,13 @@ contains
     integer :: bmi_status
     double precision :: d
 
+    if (name == "reset_time" .or. name == "ngen_realization_start_time" .or. &
+        name == "ngen_realization_end_time" .or. name == "ngen_realization_dt") then
+       size = sizeof(d)
+       bmi_status = BMI_SUCCESS
+       return
+    end if
+
     associate(forcing    => this%model%forcing,   &
               water      => this%model%water,     &
               energy     => this%model%energy,    &
@@ -733,67 +750,67 @@ contains
 
     select case(name)
     case("ACSNOM")
-      size = sizeof(water%ACSNOM)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%ACSNOM)
       bmi_status = BMI_SUCCESS
     case("AXAJ")
-      size = sizeof(parameters%AXAJ)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%AXAJ)
       bmi_status = BMI_SUCCESS
     case("BEXP")
-      size = sizeof(parameters%bexp(1))        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%BEXP)
       bmi_status = BMI_SUCCESS
     case("BXAJ")
-      size = sizeof(parameters%BXAJ)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%BXAJ)
       bmi_status = BMI_SUCCESS
     case("CMC")
-      size = sizeof(water%CMC)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%CMC)
       bmi_status = BMI_SUCCESS
     case("CWP")
-      size = sizeof(parameters%CWP)           ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%CWP)
       bmi_status = BMI_SUCCESS
     case("DKSAT")
-      size = sizeof(parameters%dksat(1))        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%DKSAT)
       bmi_status = BMI_SUCCESS
     case("ECAN")
-      size = sizeof(water%ECAN)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%ECAN)
       bmi_status = BMI_SUCCESS
     case("ETRAN")
-      size = sizeof(water%etran)                ! 'sizeof' in gcc & ifort
+      size = sizeof(water%ETRAN)
       bmi_status = BMI_SUCCESS
     case("EVAPOTRANS")
-      size = sizeof(water%evapotrans)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%EVAPOTRANS)
       bmi_status = BMI_SUCCESS
     case("FIRA")
-      size = sizeof(energy%FIRA)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%FIRA)
       bmi_status = BMI_SUCCESS
     case("FRZX")
-      size = sizeof(parameters%frzx)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%FRZX)
       bmi_status = BMI_SUCCESS
     case("FSA")
-      size = sizeof(energy%FSA)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%FSA)
       bmi_status = BMI_SUCCESS
     case("FSH")
-      size = sizeof(energy%FSH)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%FSH)
       bmi_status = BMI_SUCCESS
     case("FSNO")
-      size = sizeof(water%FSNO)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%FSNO)
       bmi_status = BMI_SUCCESS
     case("GH")
-      size = sizeof(energy%GH)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%GH)
       bmi_status = BMI_SUCCESS
     case("HVT")
-      size = sizeof(parameters%HVT)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%HVT)
       bmi_status = BMI_SUCCESS
     case("ISNOW")
-      size = sizeof(water%ISNOW)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%ISNOW)
       bmi_status = BMI_SUCCESS
     case("KDT")
-      size = sizeof(parameters%kdt)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%KDT)
       bmi_status = BMI_SUCCESS
     case("LH")
-      size = sizeof(energy%LH)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%LH)
       bmi_status = BMI_SUCCESS
     case("LWDN")
-      size = sizeof(forcing%lwdn)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%LWDN)
       bmi_status = BMI_SUCCESS
     case("MFSNO")
       size = sizeof(parameters%MFSNO)        ! 'sizeof' in gcc & ifort
@@ -802,88 +819,85 @@ contains
       size = sizeof(parameters%MP)        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
     case("PRCPNONC")
-      size = sizeof(forcing%prcpnonc)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%PRCPNONC)
       bmi_status = BMI_SUCCESS
     case("Q2")
-      size = sizeof(forcing%q2)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%Q2)
       bmi_status = BMI_SUCCESS
     case("QINSUR")
-      size = sizeof(water%qinsur)                ! 'sizeof' in gcc & ifort
+      size = sizeof(water%QINSUR)
       bmi_status = BMI_SUCCESS
     case("QRAIN")
-      size = sizeof(water%QRAIN)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%QRAIN)
       bmi_status = BMI_SUCCESS
     case("QSEVA")
-      size = sizeof(water%qseva)                ! 'sizeof' in gcc & ifort
+      size = sizeof(water%QSEVA)
       bmi_status = BMI_SUCCESS
     case("QSNOW")
-      size = sizeof(water%QSNOW)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%QSNOW)
       bmi_status = BMI_SUCCESS
     case("REFKDT")
-      size = sizeof(parameters%refkdt)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%REFKDT)
       bmi_status = BMI_SUCCESS
     case("RSURF_EXP")
-      size = sizeof(parameters%RSURF_EXP)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%RSURF_EXP)
       bmi_status = BMI_SUCCESS
     case("RSURF_SNOW")
-      size = sizeof(parameters%RSURF_SNOW)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%RSURF_SNOW)
       bmi_status = BMI_SUCCESS
     case("SCAMAX")
-      size = sizeof(parameters%SCAMAX)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%SCAMAX)
       bmi_status = BMI_SUCCESS
     case("SFCPRS")
-      size = sizeof(forcing%sfcprs)  ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%SFCPRS)
       bmi_status = BMI_SUCCESS
     case("SFCTMP")
-      size = sizeof(forcing%sfctmp)             ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%SFCTMP)
       bmi_status = BMI_SUCCESS
     case("SLOPE")
-      size = sizeof(parameters%slope)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%SLOPE)
       bmi_status = BMI_SUCCESS
     case("SMCMAX")
-      size = sizeof(parameters%smcmax(1))        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%SMCMAX)
       bmi_status = BMI_SUCCESS
     case("SNEQV")
-      size = sizeof(water%sneqv)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%SNEQV)
       bmi_status = BMI_SUCCESS
     case("SNLIQ")
-      size = sizeof(water%SNLIQ(1))            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%SNLIQ)
       bmi_status = BMI_SUCCESS
     case("SNOWH")
-      size = sizeof(water%SNOWH)            ! 'sizeof' in gcc & ifort
+      size = sizeof(water%SNOWH)
       bmi_status = BMI_SUCCESS
     case("SNOWT_AVG")
-      size = sizeof(energy%SNOWT_AVG)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%SNOWT_AVG)
       bmi_status = BMI_SUCCESS
     case("SOLDN")
-      size = sizeof(forcing%soldn)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%SOLDN)
       bmi_status = BMI_SUCCESS
     case("TG")
-      size = sizeof(energy%tg)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%TG)
       bmi_status = BMI_SUCCESS
     case("TGS")
-      size = sizeof(energy%tgs)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%TGS)
       bmi_status = BMI_SUCCESS
     case("TRAD")
-      size = sizeof(energy%TRAD)            ! 'sizeof' in gcc & ifort
+      size = sizeof(energy%TRAD)
       bmi_status = BMI_SUCCESS
     case("UU")
-      size = sizeof(forcing%uu)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%UU)
       bmi_status = BMI_SUCCESS
     case("VCMX25")
-      size = sizeof(parameters%VCMX25)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%VCMX25)
       bmi_status = BMI_SUCCESS
     case("VV")
-      size = sizeof(forcing%vv)                ! 'sizeof' in gcc & ifort
+      size = sizeof(forcing%VV)
       bmi_status = BMI_SUCCESS
     case("XXAJ")
-      size = sizeof(parameters%XXAJ)        ! 'sizeof' in gcc & ifort
+      size = sizeof(parameters%XXAJ)
       bmi_status = BMI_SUCCESS
     case("serialization_create", "serialization_size", "serialization_free", "serialization_state")
       size = sizeof(this%model%serialization_size)
-      bmi_status = BMI_SUCCESS
-    case("reset_time")
-      size = sizeof(d)
       bmi_status = BMI_SUCCESS
     case default
        size = -1
@@ -901,7 +915,10 @@ contains
     integer :: bmi_status
     integer :: s1, s2, s3, grid, grid_size, item_size
 
-    if (name == "reset_time" .or. name == "serialization_create" .or. name == "serialization_size" .or. name == "serialization_free") then
+    if (name == "reset_time" .or. name == "ngen_realization_start_time" .or. &
+        name == "ngen_realization_end_time" .or. name == "ngen_realization_dt" .or. &
+        name == "serialization_create" .or. name == "serialization_size" .or. &
+        name == "serialization_free") then
       bmi_status = noahowp_var_itemsize(this, name, nbytes)
     else if (name == "serialization_state") then
       if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
@@ -1481,8 +1498,6 @@ contains
     integer :: bmi_status
     integer(kind=int64) :: exec_status
 
-    !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR DOUBLE VARS =================
-
     select case(name)
     case("reset_time")
       call reset_model_time(this%model, exec_status)
@@ -1491,8 +1506,51 @@ contains
         call write_log("Time variables reset successfully for state restoring", LOG_LEVEL_DEBUG)
       else
         bmi_status = BMI_FAILURE
-        call write_log(" Failed to reset time variables for state restoring", LOG_LEVEL_FATAL) 
+        call write_log("Failed to reset time variables for state restoring", LOG_LEVEL_FATAL)
       end if
+
+    case("ngen_realization_start_time")
+      this%realization_start_utime = int(src(1), kind=int64)
+      if (this%realization_end_utime > 0_int64 .and. this%realization_dt_seconds > 0_int64) then
+        call apply_realization_time_config(this%model, this%realization_start_utime, this%realization_end_utime, this%realization_dt_seconds, exec_status)
+        if (exec_status == 0) then
+          bmi_status = BMI_SUCCESS
+        else
+          bmi_status = BMI_FAILURE
+          call write_log("Failed to apply ngen realization start time", LOG_LEVEL_FATAL)
+        end if
+      else
+        bmi_status = BMI_SUCCESS
+      end if
+
+    case("ngen_realization_end_time")
+      this%realization_end_utime = int(src(1), kind=int64)
+      if (this%realization_start_utime > 0_int64 .and. this%realization_dt_seconds > 0_int64) then
+        call apply_realization_time_config(this%model, this%realization_start_utime, this%realization_end_utime, this%realization_dt_seconds, exec_status)
+        if (exec_status == 0) then
+          bmi_status = BMI_SUCCESS
+        else
+          bmi_status = BMI_FAILURE
+          call write_log("Failed to apply ngen realization end time", LOG_LEVEL_FATAL)
+        end if
+      else
+        bmi_status = BMI_SUCCESS
+      end if
+
+    case("ngen_realization_dt")
+      this%realization_dt_seconds = int(src(1), kind=int64)
+      if (this%realization_start_utime > 0_int64 .and. this%realization_end_utime > 0_int64) then
+        call apply_realization_time_config(this%model, this%realization_start_utime, this%realization_end_utime, this%realization_dt_seconds, exec_status)
+        if (exec_status == 0) then
+          bmi_status = BMI_SUCCESS
+        else
+          bmi_status = BMI_FAILURE
+          call write_log("Failed to apply ngen realization dt", LOG_LEVEL_FATAL)
+        end if
+      else
+        bmi_status = BMI_SUCCESS
+      end if
+
     case default
        bmi_status = BMI_FAILURE
        call write_log("bmi:noahowp_set_double: invalid var " // name, LOG_LEVEL_WARNING)
