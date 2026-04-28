@@ -689,11 +689,14 @@ contains
     case("PRCPNONC", "QRAIN", "QSEVA", "QSNOW")
        units = "mm/s"
        bmi_status = BMI_SUCCESS
-    case("SNEQV", "ACSNOM", "SNLIQ", "ECAN", "ETRAN", "CMC")
+    case("ACSNOM", "SNLIQ", "ECAN", "ETRAN", "CMC")
        units = "mm"
        bmi_status = BMI_SUCCESS
+    case("SNEQV")
+       units = "kg m-2"
+       bmi_status = BMI_SUCCESS
     case("FSNO","ISNOW","MP","MFSNO","BEXP","KDT","RSURF_EXP","REFKDT","AXAJ","BXAJ","XXAJ","SLOPE","FRZX","SCAMAX")
-       units = "unitless"
+       units = "1"
        bmi_status = BMI_SUCCESS
     case("SNOWH","HVT")
        units = "m"
@@ -1122,6 +1125,9 @@ contains
       dest = [parameters%smcmax]
       bmi_status = BMI_SUCCESS
     case("SNEQV")
+      ! NoahOWP stores SNEQV as mm water-equivalent depth.
+      ! NWM expects SNEQV as kg m-2.
+      ! 1 mm water = 1 kg m-2.
       dest = [water%sneqv]
       bmi_status = BMI_SUCCESS
     case("SNLIQ")
