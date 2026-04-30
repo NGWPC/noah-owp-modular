@@ -98,7 +98,7 @@ module bminoahowp
 
   ! Exchange items
   integer, parameter :: input_item_count = 8
-  integer, parameter :: output_item_count = 23
+  integer, parameter :: output_item_count = 24
   character (len=BMI_MAX_VAR_NAME), target, &
        dimension(input_item_count) :: input_items
   character (len=BMI_MAX_VAR_NAME), target, &
@@ -166,7 +166,7 @@ contains
     output_items(3) = 'QSEVA'      ! evaporation rate (mm/s)
     output_items(4) = 'EVAPOTRANS' ! evapotranspiration rate (m/s)
     output_items(5) = 'TG'         ! surface/ground temperature (K) (becomes snow surface temperature when snow is present)
-    output_items(6) = 'SNEQV'      ! snow water equivalent (kg m-2 BMI-facing; internal mm)
+    output_items(6) = 'SNEQV'      ! snow water equivalent (mm)
     output_items(7) = 'TGS'        ! ground temperature (K) (is equal to TG when no snow and equal to bottom snow element temperature when there is snow)
     output_items(8) = 'ACSNOM'     ! Accumulated meltwater from bottom snow layer (mm) (NWM 3.0 output variable)
     output_items(9) = 'SNOWT_AVG'  ! Average snow temperature (K) (by layer mass) (NWM 3.0 output variable)
@@ -184,6 +184,7 @@ contains
     output_items(21) = 'LH'        ! Total latent heat to the atmosphere (W/m-2) (NWM 3.0 output variable)
     output_items(22) = 'FIRA'      ! Total net LW radiation to atmosphere (W/m-2) (NWM 3.0 output variable)
     output_items(23) = 'FSH'       ! Total sensible heat to the atmosphere (W/m-2) (NWM 3.0 output variable)
+    output_items(24) = 'SNEQV_kg_m2' ! NWM-facing snow water equivalent mass per area (kg m-2)
 
     names => output_items
     bmi_status = BMI_SUCCESS
@@ -312,7 +313,7 @@ contains
          'Q2', 'QINSUR', 'QRAIN', 'QSEVA', 'QSNOW', 'REFKDT', 'RSURF_EXP',   &
          'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', 'SNEQV',       &
          'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG', 'TGS', 'TRAD', 'UU', 'VCMX25', &
-         'VV', 'XXAJ')
+         'VV', 'XXAJ', 'SNEQV_kg_m2')
          grid = 0
          bmi_status = BMI_SUCCESS
     case('SNLIQ')
@@ -632,7 +633,7 @@ contains
          'PRCPNONC', 'Q2', 'QINSUR', 'QRAIN', 'QSEVA', 'QSNOW', 'REFKDT',  &
          'RSURF_EXP', 'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', &
          'SMCMAX', 'SNEQV', 'SNLIQ', 'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG',  &
-         'TGS', 'TRAD', 'UU', 'VCMX25', 'VV', 'XXAJ')
+         'TGS', 'TRAD', 'UU', 'VCMX25', 'VV', 'XXAJ', 'SNEQV_kg_m2')
        type = "real"
        bmi_status = BMI_SUCCESS
     case('ISNOW')
@@ -689,10 +690,10 @@ contains
     case("PRCPNONC", "QRAIN", "QSEVA", "QSNOW")
        units = "mm/s"
        bmi_status = BMI_SUCCESS
-    case("ACSNOM", "SNLIQ", "ECAN", "ETRAN", "CMC")
+    case("SNEQV", "ACSNOM", "SNLIQ", "ECAN", "ETRAN", "CMC")
        units = "mm"
        bmi_status = BMI_SUCCESS
-    case("SNEQV")
+    case("SNEQV_kg_m2")
        units = "kg m-2"
        bmi_status = BMI_SUCCESS
     case("FSNO","ISNOW","MP","MFSNO","BEXP","KDT","RSURF_EXP","REFKDT","AXAJ","BXAJ","XXAJ","SLOPE","FRZX","SCAMAX")
@@ -846,7 +847,7 @@ contains
     case("SMCMAX")
       size = sizeof(parameters%smcmax(1))        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
-    case("SNEQV")
+    case("SNEQV", "SNEQV_kg_m2")
       size = sizeof(water%sneqv)            ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
     case("SNLIQ")
@@ -1125,9 +1126,11 @@ contains
       dest = [parameters%smcmax]
       bmi_status = BMI_SUCCESS
     case("SNEQV")
-      ! water%sneqv is stored as mm water-equivalent depth.
-      ! BMI exposes this as kg m-2 for NWM SNEQV.
-      ! Since 1 mm water = 1 kg m-2, the numeric value is unchanged.
+      dest = [water%sneqv]
+      bmi_status = BMI_SUCCESS
+    case("SNEQV_kg_m2")
+      ! NoahOWP stores SNEQV as mm water-equivalent depth.
+      ! NWM expects kg m-2. Numerically, 1 mm water = 1 kg m-2.
       dest = [water%sneqv]
       bmi_status = BMI_SUCCESS
     case("SNLIQ")
@@ -1447,7 +1450,10 @@ contains
       parameters%frzx      = 0.15 * (parameters%smcmax(1) / parameters%smcref(1)) * (0.412 / 0.468)
       bmi_status = BMI_SUCCESS
     case("SNEQV")
-      ! Input value is kg m-2 BMI-facing, numerically equivalent to mm water-equivalent.
+      water%sneqv = src(1)
+      bmi_status = BMI_SUCCESS
+    case("SNEQV_kg_m2")
+      ! BMI-facing kg m-2 is numerically equivalent to internal mm water-equivalent.
       water%sneqv = src(1)
       bmi_status = BMI_SUCCESS
     case("SOLDN")
