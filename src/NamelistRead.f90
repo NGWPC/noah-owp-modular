@@ -310,28 +310,9 @@ contains
     !---------------------------------------------------------------------
     !  transfer values to namelist data structure
     !---------------------------------------------------------------------
-
-    if(dt /= realMissing) then
-      this%dt = dt
-    else
-      this%dt = 3600.0
-      call write_log('INFO: optional entry dt not found in namelist; using placeholder value until ngen provides runtime timing via BMI', LOG_LEVEL_INFO)
-    end if
-
-    if(startdate /= stringMissing) then
-      this%startdate = startdate
-    else
-      this%startdate = '197001010000'
-      call write_log('INFO: optional entry startdate not found in namelist; using placeholder value until ngen provides runtime timing via BMI', LOG_LEVEL_INFO)
-    end if
-
-    if(enddate /= stringMissing) then
-      this%enddate = enddate
-    else
-      this%enddate = '197001010100'
-      call write_log('INFO: optional entry enddate not found in namelist; using placeholder value until ngen provides runtime timing via BMI', LOG_LEVEL_INFO)
-    end if
-
+    if(dt               /= realMissing) then; this%dt = dt; else; call handle_err('ERROR: required entry dt not found in namelist'); end if 
+    if(startdate        /= stringMissing) then; this%startdate = startdate; else; call handle_err('ERROR: required entry startdate not found in namelist'); end if
+    if(enddate          /= stringMissing) then; this%enddate = enddate; else; call handle_err('ERROR: required entry enddate not found in namelist'); end if
     if(forcing_filename /= stringMissing) then; this%forcing_filename = forcing_filename; else; call handle_err('ERROR: required entry forcing_filename not found in namelist'); end if
     if(output_filename  /= stringMissing) then; this%output_filename = output_filename; else; call handle_err('ERROR: required entry output_filename not found in namelist'); end if
     if(parameter_dir    /= stringMissing) then; this%parameter_dir = parameter_dir; else; call handle_err('ERROR: required entry parameter_dir not found in namelist'); end if
