@@ -315,14 +315,14 @@ contains
         this%startdate = startdate
     else
         this%startdate = '197001010000'
-        call write_log('Optional entry startdate not found in namelist; using placeholder until BMI realization time is supplied', LOG_LEVEL_INFO)
+        call write_log('Optional entry startdate not found in namelist; using placeholder until BMI realization time is supplied', LOG_LEVEL_DEBUG)
     end if
 
     if(enddate          /= stringMissing) then
         this%enddate = enddate
     else
         this%enddate = '197001010100'
-        call write_log('Optional entry enddate not found in namelist; using placeholder until BMI realization time is supplied', LOG_LEVEL_INFO)
+        call write_log('Optional entry enddate not found in namelist; using placeholder until BMI realization time is supplied', LOG_LEVEL_DEBUG)
     end if
     ! if(startdate        /= stringMissing) then; this%startdate = startdate; else; call handle_err('ERROR: required entry startdate not found in namelist'); end if
     ! if(enddate          /= stringMissing) then; this%enddate = enddate; else; call handle_err('ERROR: required entry enddate not found in namelist'); end if
