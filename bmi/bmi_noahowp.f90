@@ -98,7 +98,7 @@ module bminoahowp
 
   ! Exchange items
   integer, parameter :: input_item_count = 8
-  integer, parameter :: output_item_count = 23
+  integer, parameter :: output_item_count = 24
   character (len=BMI_MAX_VAR_NAME), target, &
        dimension(input_item_count) :: input_items
   character (len=BMI_MAX_VAR_NAME), target, &
@@ -184,6 +184,7 @@ contains
     output_items(21) = 'LH'        ! Total latent heat to the atmosphere (W/m-2) (NWM 3.0 output variable)
     output_items(22) = 'FIRA'      ! Total net LW radiation to atmosphere (W/m-2) (NWM 3.0 output variable)
     output_items(23) = 'FSH'       ! Total sensible heat to the atmosphere (W/m-2) (NWM 3.0 output variable)
+    output_items(24) = 'SNEQV_kg_m2' ! NWM-facing snow water equivalent mass per area (kg m-2)
 
     names => output_items
     bmi_status = BMI_SUCCESS
@@ -312,7 +313,7 @@ contains
          'Q2', 'QINSUR', 'QRAIN', 'QSEVA', 'QSNOW', 'REFKDT', 'RSURF_EXP',   &
          'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', 'SNEQV',       &
          'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG', 'TGS', 'TRAD', 'UU', 'VCMX25', &
-         'VV', 'XXAJ')
+         'VV', 'XXAJ', 'SNEQV_kg_m2')
          grid = 0
          bmi_status = BMI_SUCCESS
     case('SNLIQ')
@@ -620,9 +621,9 @@ contains
     character (len=*), intent(in) :: name
     character (len=*), intent(out) :: type
     integer :: bmi_status
-    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "uint64" !pads spaces upto 2048.
-    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "uint64" !pads spaces upto 2048
-    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "character" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_create = "int" !pads spaces upto 2048.
+    character(len=BMI_MAX_TYPE_NAME) :: ser_size = "int" !pads spaces upto 2048
+    character(len=BMI_MAX_TYPE_NAME) :: ser_state = "int" !pads spaces upto 2048
     character(len=BMI_MAX_TYPE_NAME) :: ser_free = "int" !pads spaces upto 2048
 
     select case(name)
@@ -632,7 +633,7 @@ contains
          'PRCPNONC', 'Q2', 'QINSUR', 'QRAIN', 'QSEVA', 'QSNOW', 'REFKDT',  &
          'RSURF_EXP', 'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', &
          'SMCMAX', 'SNEQV', 'SNLIQ', 'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG',  &
-         'TGS', 'TRAD', 'UU', 'VCMX25', 'VV', 'XXAJ')
+         'TGS', 'TRAD', 'UU', 'VCMX25', 'VV', 'XXAJ', 'SNEQV_kg_m2')
        type = "real"
        bmi_status = BMI_SUCCESS
     case('ISNOW')
@@ -649,6 +650,9 @@ contains
        bmi_status = BMI_SUCCESS
     case ('serialization_free')
        type = ser_free
+       bmi_status = BMI_SUCCESS
+    case ("reset_time")
+       type = "double"
        bmi_status = BMI_SUCCESS
     case default
        type = "-"
@@ -689,8 +693,11 @@ contains
     case("SNEQV", "ACSNOM", "SNLIQ", "ECAN", "ETRAN", "CMC")
        units = "mm"
        bmi_status = BMI_SUCCESS
+    case("SNEQV_kg_m2")
+       units = "kg m-2"
+       bmi_status = BMI_SUCCESS
     case("FSNO","ISNOW","MP","MFSNO","BEXP","KDT","RSURF_EXP","REFKDT","AXAJ","BXAJ","XXAJ","SLOPE","FRZX","SCAMAX")
-       units = "unitless"
+       units = "1"
        bmi_status = BMI_SUCCESS
     case("SNOWH","HVT")
        units = "m"
@@ -721,6 +728,7 @@ contains
     character (len=*), intent(in) :: name
     integer, intent(out) :: size
     integer :: bmi_status
+    double precision :: d
 
     associate(forcing    => this%model%forcing,   &
               water      => this%model%water,     &
@@ -839,7 +847,7 @@ contains
     case("SMCMAX")
       size = sizeof(parameters%smcmax(1))        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
-    case("SNEQV")
+    case("SNEQV", "SNEQV_kg_m2")
       size = sizeof(water%sneqv)            ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
     case("SNLIQ")
@@ -875,6 +883,12 @@ contains
     case("XXAJ")
       size = sizeof(parameters%XXAJ)        ! 'sizeof' in gcc & ifort
       bmi_status = BMI_SUCCESS
+    case("serialization_create", "serialization_size", "serialization_free", "serialization_state")
+      size = sizeof(this%model%serialization_size)
+      bmi_status = BMI_SUCCESS
+    case("reset_time")
+      size = sizeof(d)
+      bmi_status = BMI_SUCCESS
     case default
        size = -1
        bmi_status = BMI_FAILURE
@@ -891,21 +905,20 @@ contains
     integer :: bmi_status
     integer :: s1, s2, s3, grid, grid_size, item_size
 
-    if (name == "serialization_create" .or. name == "serialization_size") then
-      nbytes = storage_size(0_int64)/8 !returns size in bits. So, divide by 8 for bytes.
-      bmi_status = BMI_SUCCESS
+    if (name == "reset_time" .or. name == "serialization_create" .or. name == "serialization_size" .or. name == "serialization_free") then
+      bmi_status = noahowp_var_itemsize(this, name, nbytes)
     else if (name == "serialization_state") then
-      if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
-         nbytes = -1
-         call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
-         bmi_status = BMI_FAILURE
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        nbytes = sizeof(this%model%serialization_buffer)
+        bmi_status = BMI_SUCCESS
+      else if (this%model%serialization_size > 0) then
+        nbytes = this%model%serialization_size
+        bmi_status = BMI_SUCCESS
       else
-         nbytes = size(this%model%serialization_buffer,KIND=int64)
-         bmi_status = BMI_SUCCESS
+        nbytes = -1
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
       end if
-    else if (name == "serialization_free") then 
-      nbytes = storage_size(0_int32)/8 !returns size in bits. So, divide by 8 for bytes.
-      bmi_status = BMI_SUCCESS
     else
       s1 = this%get_var_grid(name, grid)
       s2 = this%get_grid_size(grid, grid_size)
@@ -945,6 +958,8 @@ contains
     character (len=*), intent(in) :: name
     integer, intent(inout) :: dest(:)
     integer :: bmi_status
+    character(len=20) :: dest_size
+    character(len=20) :: ser_size
 
     select case(name)
 !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR INTEGER VARS =================
@@ -952,16 +967,33 @@ contains
 !        dest = [this%model%id]
 !        bmi_status = BMI_SUCCESS
     case("ISNOW")
-       dest(:) = this%model%water%ISNOW
-       bmi_status = BMI_SUCCESS
+      dest(:) = this%model%water%ISNOW
+      bmi_status = BMI_SUCCESS
     case("serialization_size")
-        if(.not.allocated(this%model%serialization_buffer) .or. size(this%model%serialization_buffer) == 0) then
-            call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
-            bmi_status = BMI_FAILURE
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        dest(:) = sizeof(this%model%serialization_buffer)
+        bmi_status = BMI_SUCCESS
+      else
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
+      end if
+    case("serialization_state")
+      if(allocated(this%model%serialization_buffer) .and. size(this%model%serialization_buffer) > 0) then
+        if(size(dest) == size(this%model%serialization_buffer)) then
+          dest(:) = this%model%serialization_buffer(:)
+          bmi_status = BMI_SUCCESS
         else
-            dest = size(this%model%serialization_buffer,KIND=int64)
-            bmi_status = BMI_SUCCESS
-         end if
+          write(dest_size, "(I20)") size(dest)
+          write(ser_size, "(I20)") size(this%model%serialization_buffer)
+          call write_log("The destination size (" // trim(dest_size) &
+            // ") does not match the serializations size (" // trim(ser_size) // ")", &
+            LOG_LEVEL_SEVERE)
+          bmi_status = BMI_FAILURE
+        end if
+      else
+        call write_log("Serialization not set yet!", LOG_LEVEL_WARNING)
+        bmi_status = BMI_FAILURE
+      end if
     case default
        dest(:) = -1
        bmi_status = BMI_FAILURE
@@ -1096,6 +1128,11 @@ contains
     case("SNEQV")
       dest = [water%sneqv]
       bmi_status = BMI_SUCCESS
+    case("SNEQV_kg_m2")
+      ! NoahOWP stores SNEQV as mm water-equivalent depth.
+      ! NWM expects kg m-2. Numerically, 1 mm water = 1 kg m-2.
+      dest = [water%sneqv]
+      bmi_status = BMI_SUCCESS
     case("SNLIQ")
       dest = [water%SNLIQ]
       bmi_status = BMI_SUCCESS
@@ -1166,9 +1203,6 @@ contains
      integer :: n_elements
 
      select case(name)
-      case("serialization_state")
-          dest_ptr = this%model%serialization_buffer
-          bmi_status = BMI_SUCCESS
       case default
           bmi_status = BMI_FAILURE
           call write_log("bmi:noahowp_get_ptr_int: invalid var " // name, LOG_LEVEL_WARNING)
@@ -1289,22 +1323,31 @@ contains
 !     case("model__identification_number")
 !        this%model%id = src(1)
 !        bmi_status = BMI_SUCCESS
+      case("serialization_size")
+        !hacky way of letting the BMI set the serialized data
+        !The C to Fortran interface takes a C pointer to the data, then gets the size of the data array by querying the value behind the scenes.
+        !This behavior makes it necessary to lie to the BMI implementation about how large the incoming data is expected to be.
+        this%model%serialization_size = src(1)
+        bmi_status = BMI_SUCCESS
       case("serialization_create")
          call new_serialization_request(this%model, exec_status)
          if (exec_status == 0) then
             bmi_status = BMI_SUCCESS
-            call write_log("Serialization for state saving complete", LOG_LEVEL_INFO)
+            call write_log("Serialization for state saving complete", LOG_LEVEL_DEBUG)
          else
             bmi_status = BMI_FAILURE
             call write_log(" Failed to create serialized data for state saving", LOG_LEVEL_FATAL) 
          end if
+         this%model%serialization_size = -1
       case("serialization_state")
          call deserialize_mp_buffer(this%model,src)
+         this%model%serialization_size = -1
          bmi_status = BMI_SUCCESS
       case("serialization_free")
          if(allocated(this%model%serialization_buffer)) then
             deallocate(this%model%serialization_buffer)
          end if
+         this%model%serialization_size = -1
          bmi_status = BMI_SUCCESS
       case default
        bmi_status = BMI_FAILURE
@@ -1409,6 +1452,10 @@ contains
     case("SNEQV")
       water%sneqv = src(1)
       bmi_status = BMI_SUCCESS
+    case("SNEQV_kg_m2")
+      ! BMI-facing kg m-2 is numerically equivalent to internal mm water-equivalent.
+      water%sneqv = src(1)
+      bmi_status = BMI_SUCCESS
     case("SOLDN")
       forcing%soldn = src(1)
       bmi_status = BMI_SUCCESS
@@ -1445,10 +1492,20 @@ contains
     character (len=*), intent(in) :: name
     double precision, intent(in) :: src(:)
     integer :: bmi_status
+    integer(kind=int64) :: exec_status
 
     !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR DOUBLE VARS =================
 
     select case(name)
+    case("reset_time")
+      call reset_model_time(this%model, exec_status)
+      if (exec_status == 0) then
+        bmi_status = BMI_SUCCESS
+        call write_log("Time variables reset successfully for state restoring", LOG_LEVEL_DEBUG)
+      else
+        bmi_status = BMI_FAILURE
+        call write_log(" Failed to reset time variables for state restoring", LOG_LEVEL_FATAL) 
+      end if
     case default
        bmi_status = BMI_FAILURE
        call write_log("bmi:noahowp_set_double: invalid var " // name, LOG_LEVEL_WARNING)

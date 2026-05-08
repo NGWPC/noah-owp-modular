@@ -200,29 +200,29 @@ SUBROUTINE energy_serialization (energy, mp_arr)
     mp_arr%values(30)%obj = mp_float_type(energy%RSURF) !RSURF
     mp_arr%values(31)%obj = mp_float_type(energy%RHSUR) !RHSUR
     mp_arr%values(32)%obj = mp_float_type(energy%LATHEAV) !LATHEAV
-    mp_arr%values(34)%obj = mp_float_type(energy%GAMMAV) !GAMMAV
-    mp_arr%values(35)%obj = mp_float_type(energy%LATHEAG) !LATHEAG
-    mp_arr%values(36)%obj = mp_float_type(energy%GAMMAG) !GAMMAG
-    mp_arr%values(37)%obj = mp_float_type(energy%TGB) !TGB
-    mp_arr%values(38)%obj = mp_float_type(energy%CMB) !CMB
-    mp_arr%values(39)%obj = mp_float_type(energy%CHB) !CHB
-    mp_arr%values(40)%obj = mp_float_type(energy%Z0WRF) !Z0WRF
-    mp_arr%values(41)%obj = mp_float_type(energy%RSSUN) !RSSUN
-    mp_arr%values(42)%obj = mp_float_type(energy%T2M) !T2M
-    mp_arr%values(43)%obj = mp_float_type(energy%Q1) !Q1
-    mp_arr%values(44)%obj = mp_float_type(energy%Q2E) !Q2E
-    mp_arr%values(45)%obj = mp_float_type(energy%FGEV) !FGEV
-    mp_arr%values(46)%obj = mp_float_type(energy%TS) !TS
-    mp_arr%values(47)%obj = mp_float_type(energy%TAUY) !TAUY
-    mp_arr%values(48)%obj = mp_float_type(energy%GH) !GH
-    mp_arr%values(59)%obj = mp_float_type(energy%SSOIL) !SSOIL
-    mp_arr%values(50)%obj = mp_float_type(energy%TGV) !TGV
-    mp_arr%values(51)%obj = mp_float_type(energy%FCEV) !FCEV
-    mp_arr%values(52)%obj = mp_float_type(energy%CM) !CM
-    mp_arr%values(53)%obj = mp_float_type(energy%FIRA) !FIRA
-    mp_arr%values(54)%obj = mp_float_type(energy%RSSHA) !RSSHA
-    mp_arr%values(55)%obj = mp_float_type(energy%TG) !TG
-    mp_arr%values(57)%obj = mp_float_type(energy%CH) !CH
+    mp_arr%values(33)%obj = mp_float_type(energy%GAMMAV) !GAMMAV
+    mp_arr%values(34)%obj = mp_float_type(energy%LATHEAG) !LATHEAG
+    mp_arr%values(35)%obj = mp_float_type(energy%GAMMAG) !GAMMAG
+    mp_arr%values(36)%obj = mp_float_type(energy%TGB) !TGB
+    mp_arr%values(37)%obj = mp_float_type(energy%CMB) !CMB
+    mp_arr%values(38)%obj = mp_float_type(energy%CHB) !CHB
+    mp_arr%values(39)%obj = mp_float_type(energy%Z0WRF) !Z0WRF
+    mp_arr%values(40)%obj = mp_float_type(energy%RSSUN) !RSSUN
+    mp_arr%values(41)%obj = mp_float_type(energy%T2M) !T2M
+    mp_arr%values(42)%obj = mp_float_type(energy%Q1) !Q1
+    mp_arr%values(43)%obj = mp_float_type(energy%Q2E) !Q2E
+    mp_arr%values(44)%obj = mp_float_type(energy%FGEV) !FGEV
+    mp_arr%values(45)%obj = mp_float_type(energy%TS) !TS
+    mp_arr%values(46)%obj = mp_float_type(energy%TAUY) !TAUY
+    mp_arr%values(47)%obj = mp_float_type(energy%GH) !GH
+    mp_arr%values(48)%obj = mp_float_type(energy%SSOIL) !SSOIL
+    mp_arr%values(49)%obj = mp_float_type(energy%TGV) !TGV
+    mp_arr%values(50)%obj = mp_float_type(energy%FCEV) !FCEV
+    mp_arr%values(51)%obj = mp_float_type(energy%CM) !CM
+    mp_arr%values(52)%obj = mp_float_type(energy%FIRA) !FIRA
+    mp_arr%values(53)%obj = mp_float_type(energy%RSSHA) !RSSHA
+    mp_arr%values(54)%obj = mp_float_type(energy%TG) !TG
+    mp_arr%values(55)%obj = mp_float_type(energy%CH) !CH
     mp_arr%values(56)%obj = mp_float_type(energy%FCTR) !FCTR
     mp_arr%values(57)%obj = mp_float_type(energy%PAH) !PAH
     mp_arr%values(58)%obj = mp_float_type(energy%TAUX) !TAUX
@@ -276,9 +276,9 @@ SUBROUTINE energy_serialization (energy, mp_arr)
     mp_arr%values(106)%obj = transfer_values_to_mp(energy%FREVI) !FREVI array  (1:2)
     mp_arr%values(107)%obj = transfer_values_to_mp(energy%FREGI) !FREGI array  (1:2)
     mp_arr%values(108)%obj = transfer_values_to_mp(energy%STC) !STC array
-    mp_arr%values(109)%obj = transfer_values_to_mp(energy%HCPCT ) !HCPCT array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(110)%obj = transfer_values_to_mp(energy%DF ) !DF array  (-levels%NSNOW+1:levels%NSOIL)
-    mp_arr%values(111)%obj = transfer_values_to_mp(energy%FACT ) !FACT array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(109)%obj = transfer_values_to_mp(energy%HCPCT) !HCPCT array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(110)%obj = transfer_values_to_mp(energy%DF) !DF array  (-levels%NSNOW+1:levels%NSOIL)
+    mp_arr%values(111)%obj = transfer_values_to_mp(energy%FACT) !FACT array  (-levels%NSNOW+1:levels%NSOIL)
     mp_arr%values(112)%obj = transfer_values_to_mp(energy%ALBD)  !ALBD array  (1:parameters%NBAND)
     mp_arr%values(113)%obj = transfer_values_to_mp(energy%ALBI) !ALBI array  (1:parameters%NBAND)
     mp_arr%values(114)%obj = transfer_values_to_mp(energy%ALBGRD) !ALBGRD array  (1:parameters%NBAND)
@@ -802,7 +802,7 @@ SUBROUTINE parameters_serialization (parameters, mp_arr)
     mp_arr%values(2)%obj = mp_float_type(parameters%LAI) !LAI
     mp_arr%values(3)%obj = mp_float_type(parameters%ESAI) !ESAI
     mp_arr%values(4)%obj = mp_float_type(parameters%ELAI) !ELAI
-    mp_arr%values(4)%obj = mp_float_type(parameters%FVEG) !FVEG
+    mp_arr%values(5)%obj = mp_float_type(parameters%FVEG) !FVEG
 
 END SUBROUTINE parameters_serialization
 
@@ -832,11 +832,16 @@ END SUBROUTINE parameters_deserialization
 
 FUNCTION transfer_values_to_mp (src) RESULT (dest)
 
-real, allocatable, dimension(:), intent(in) :: src
-class(mp_arr_type), allocatable :: dest
-integer(kind=int64) :: index
+    real, dimension(:), intent(in) :: src
+    type(mp_arr_type) :: dest
+    integer :: lb, ub, index, arr_size
 
-    do index=LBOUND(src,1), UBOUND(src,1)
+    lb = LBOUND(src,1)
+    ub = UBOUND(src,1)
+    arr_size = size(src)
+    dest = mp_arr_type(arr_size)
+    
+    do index = lb, ub
         dest%values(index)%obj = mp_float_type(src(index))
     end do
 
@@ -844,11 +849,16 @@ END FUNCTION transfer_values_to_mp
 
 FUNCTION transfer_values_to_mp_int (src) RESULT (dest)
 
-integer, allocatable, dimension(:), intent(in) :: src
-class(mp_arr_type), allocatable :: dest
-integer(kind=int64) :: index
+    integer, dimension(:), intent(in) :: src
+    type(mp_arr_type) :: dest
+    integer :: lb, ub, index, arr_size
 
-    do index=LBOUND(src,1), UBOUND(src,1)
+    lb = LBOUND(src,1)
+    ub = UBOUND(src,1)
+    arr_size = size(src)
+    dest = mp_arr_type(arr_size)
+
+    do index = lb, ub
         dest%values(index)%obj = mp_int_type(src(index))
     end do
 
@@ -856,13 +866,18 @@ END FUNCTION transfer_values_to_mp_int
 
 FUNCTION transfer_values_from_mp (src) RESULT (dest)
 
-class(mp_arr_type), allocatable, intent(in) :: src
-real, allocatable, dimension(:) :: dest
-real(kind=real64) :: deserialized_val
-integer(kind=int64) :: index
-logical :: status
+    class(mp_arr_type), intent(in) :: src
+    real, allocatable, dimension(:) :: dest
+    real(kind=real64) :: deserialized_val
+    integer :: index, lb, ub
+    logical :: status
     
-    do index=1, src%numelements()
+    lb = lbound(src%values, 1)
+    ub = ubound(src%values, 1)
+
+    allocate(dest(lb:ub))
+    
+    do index = lb, ub
         call get_real(src%values(index)%obj, deserialized_val, status)
         dest(index) = deserialized_val
     end do
@@ -871,13 +886,18 @@ END FUNCTION transfer_values_from_mp
 
 FUNCTION transfer_values_from_mp_int (src) RESULT (dest)
 
-class(mp_arr_type), allocatable, intent(in) :: src
-integer, allocatable, dimension(:) :: dest
-integer(kind=int64) :: deserialized_int_val
-integer(kind=int64) :: index
-logical :: status
+    class(mp_arr_type), intent(in) :: src
+    integer, allocatable, dimension(:) :: dest
+    integer(kind=int64) :: deserialized_int_val
+    integer :: index, lb, ub
+    logical :: status
     
-    do index=1, src%numelements()
+    lb = lbound(src%values, 1)
+    ub = ubound(src%values, 1)
+
+    allocate(dest(lb:ub))
+
+    do index = lb, ub
         call get_int(src%values(index)%obj, deserialized_int_val, status)
         dest(index) = deserialized_int_val
     end do
