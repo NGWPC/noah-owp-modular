@@ -1,5 +1,7 @@
 module bminoahowp
   use noahowp_log_module
+  use, intrinsic :: iso_fortran_env, only: int64
+
 ! NGEN_ACTIVE is to be set when running in the Nextgen framework
 ! https://github.com/NOAA-OWP/ngen
 #ifdef NGEN_ACTIVE
@@ -1204,9 +1206,16 @@ contains
     double precision, intent(inout) :: dest(:)
     integer :: bmi_status
 
-    !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR DOUBLE VARS =================
-
     select case(name)
+    case("ngen_realization_start_time")
+       dest(:) = this%ngen_realization_start_time
+       bmi_status = BMI_SUCCESS
+    case("ngen_realization_end_time")
+       dest(:) = this%ngen_realization_end_time
+       bmi_status = BMI_SUCCESS
+    case("ngen_realization_dt")
+       dest(:) = this%ngen_realization_dt
+       bmi_status = BMI_SUCCESS
     case default
        dest(:) = -1.d0
        bmi_status = BMI_FAILURE
@@ -1507,7 +1516,7 @@ contains
     ! this%model%temperature = reshape(src, [this%model%n_y, this%model%n_x])
   end function noahowp_set_float
 
-  ! Set new double values.
+   ! Set new double values.
   function noahowp_set_double(this, name, src) result (bmi_status)
     class (bmi_noahowp), intent(inout) :: this
     character (len=*), intent(in) :: name
@@ -1608,56 +1617,6 @@ contains
      end select
    end function noahowp_set_at_indices_double
 
-   ! A non-BMI helper routine to advance the model by a fractional time step.
-!   subroutine update_frac(this, time_frac)
-!     class (bmi_noahowp), intent(inout) :: this
-!     double precision, intent(in) :: time_frac
-!     real :: time_step
-!
-!     if (time_frac > 0.0) then
-!        time_step = this%model%dt
-!        this%model%dt = time_step*real(time_frac)
-!        call advance_in_time(this%model)
-!        this%model%dt = time_step
-!     end if
-!   end subroutine update_frac
-!
-!   ! A non-BMI procedure for model introspection.
-!   subroutine print_model_info(this)
-!     class (bmi_noahowp), intent(in) :: this
-!
-!     call print_info(this%model)
-!   end subroutine print_model_info
-#ifdef NGEN_ACTIVE
-  function register_bmi(this) result(bmi_status) bind(C, name="register_bmi")
-   use, intrinsic:: iso_c_binding, only: c_ptr, c_loc, c_int
-   use iso_c_bmif_2_0
-   implicit none
-   type(c_ptr) :: this ! If not value, then from the C perspective `this` is a void**
-   integer(kind=c_int) :: bmi_status
-   !Create the model instance to use
-   type(bmi_noahowp), pointer :: bmi_model
-   !Create a simple pointer wrapper
-   type(box), pointer :: bmi_box
-
-   !allocate model
-   allocate(bmi_noahowp::bmi_model)
-   !allocate the pointer box
-   allocate(bmi_box)
-
-   !associate the wrapper pointer the created model instance
-   bmi_box%ptr => bmi_model
-
-   if( .not. associated( bmi_box ) .or. .not. associated( bmi_box%ptr ) ) then
-    bmi_status = BMI_FAILURE
-    call write_log("bmi:register_bmi: bmi_box error", LOG_LEVEL_WARNING)
-   else
-    !Return the pointer to box
-    this = c_loc(bmi_box)
-    bmi_status = BMI_SUCCESS
-   endif
- end function register_bmi
-
   function noahowp_apply_realization_time_config(this) result (bmi_status)
     class (bmi_noahowp), intent(inout) :: this
     integer :: bmi_status
@@ -1707,7 +1666,7 @@ contains
 
     this%model%namelist%startdate = startdate_str
     this%model%namelist%enddate   = enddate_str
-    this%model%namelist%dt        = int(dt_seconds)
+    this%model%namelist%dt        = real(dt_seconds)
 
     this%model%domain%startdate      = startdate_str
     this%model%domain%enddate        = enddate_str
@@ -1738,11 +1697,60 @@ contains
     call write_log("  startdate=" // trim(this%model%domain%startdate), LOG_LEVEL_INFO)
     call write_log("  enddate=" // trim(this%model%domain%enddate), LOG_LEVEL_INFO)
     call write_log("  dt_seconds=" // trim(itoa(int(this%model%domain%dt))), LOG_LEVEL_INFO)
-    ! call write_log("  dt_seconds=" // trim(itoa(this%model%domain%dt)), LOG_LEVEL_INFO)
     call write_log("  ntime=" // trim(itoa(this%model%domain%ntime)), LOG_LEVEL_INFO)
 
     bmi_status = BMI_SUCCESS
   end function noahowp_apply_realization_time_config
+
+   ! A non-BMI helper routine to advance the model by a fractional time step.
+!   subroutine update_frac(this, time_frac)
+!     class (bmi_noahowp), intent(inout) :: this
+!     double precision, intent(in) :: time_frac
+!     real :: time_step
+!
+!     if (time_frac > 0.0) then
+!        time_step = this%model%dt
+!        this%model%dt = time_step*real(time_frac)
+!        call advance_in_time(this%model)
+!        this%model%dt = time_step
+!     end if
+!   end subroutine update_frac
+!
+!   ! A non-BMI procedure for model introspection.
+!   subroutine print_model_info(this)
+!     class (bmi_noahowp), intent(in) :: this
+!
+!     call print_info(this%model)
+!   end subroutine print_model_info
+#ifdef NGEN_ACTIVE
+  function register_bmi(this) result(bmi_status) bind(C, name="register_bmi")
+   use, intrinsic:: iso_c_binding, only: c_ptr, c_loc, c_int
+   use iso_c_bmif_2_0
+   implicit none
+   type(c_ptr) :: this ! If not value, then from the C perspective `this` is a void**
+   integer(kind=c_int) :: bmi_status
+   !Create the model instance to use
+   type(bmi_noahowp), pointer :: bmi_model
+   !Create a simple pointer wrapper
+   type(box), pointer :: bmi_box
+
+   !allocate model
+   allocate(bmi_noahowp::bmi_model)
+   !allocate the pointer box
+   allocate(bmi_box)
+
+   !associate the wrapper pointer the created model instance
+   bmi_box%ptr => bmi_model
+
+   if( .not. associated( bmi_box ) .or. .not. associated( bmi_box%ptr ) ) then
+    bmi_status = BMI_FAILURE
+    call write_log("bmi:register_bmi: bmi_box error", LOG_LEVEL_WARNING)
+   else
+    !Return the pointer to box
+    this = c_loc(bmi_box)
+    bmi_status = BMI_SUCCESS
+   endif
+ end function register_bmi
 
 #endif
 end module bminoahowp
