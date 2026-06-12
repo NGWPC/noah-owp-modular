@@ -1,5 +1,7 @@
 module bminoahowp
   use noahowp_log_module
+  use, intrinsic :: iso_fortran_env, only: int64
+
 ! NGEN_ACTIVE is to be set when running in the Nextgen framework
 ! https://github.com/NOAA-OWP/ngen
 #ifdef NGEN_ACTIVE
@@ -15,6 +17,11 @@ module bminoahowp
   type, extends (bmi) :: bmi_noahowp
      private
      type (noahowp_type) :: model
+     double precision :: ngen_realization_start_time = -1.d0
+     double precision :: ngen_realization_end_time   = -1.d0
+     double precision :: ngen_realization_dt         = -1.d0
+     logical :: ngen_realization_time_applied = .false.
+
    contains
      procedure :: get_component_name => noahowp_component_name
      procedure :: get_input_item_count => noahowp_input_item_count
@@ -97,7 +104,7 @@ module bminoahowp
        component_name = "Noah-OWP-Modular Surface Module"
 
   ! Exchange items
-  integer, parameter :: input_item_count = 8
+  integer, parameter :: input_item_count = 11
   integer, parameter :: output_item_count = 24
   character (len=BMI_MAX_VAR_NAME), target, &
        dimension(input_item_count) :: input_items
@@ -150,7 +157,11 @@ contains
     input_items(6) = 'VV'       ! wind speed in northward direction (m/s)
     input_items(7) = 'Q2'       ! mixing ratio (kg/kg)
     input_items(8) = 'PRCPNONC' ! precipitation rate (mm/s)
-    
+   
+    input_items(9)  = 'ngen_realization_start_time'
+    input_items(10) = 'ngen_realization_end_time'
+    input_items(11) = 'ngen_realization_dt'
+
     names => input_items
     bmi_status = BMI_SUCCESS
   end function noahowp_input_var_names
@@ -314,6 +325,9 @@ contains
          'RSURF_SNOW', 'SCAMAX', 'SFCPRS', 'SFCTMP', 'SLOPE', 'SNEQV',       &
          'SNOWH', 'SNOWT_AVG', 'SOLDN', 'TG', 'TGS', 'TRAD', 'UU', 'VCMX25', &
          'VV', 'XXAJ', 'SNEQV_kg_m2')
+         grid = 0
+         bmi_status = BMI_SUCCESS
+    case('ngen_realization_start_time', 'ngen_realization_end_time', 'ngen_realization_dt')
          grid = 0
          bmi_status = BMI_SUCCESS
     case('SNLIQ')
@@ -636,6 +650,9 @@ contains
          'TGS', 'TRAD', 'UU', 'VCMX25', 'VV', 'XXAJ', 'SNEQV_kg_m2')
        type = "real"
        bmi_status = BMI_SUCCESS
+    case('ngen_realization_start_time', 'ngen_realization_end_time', 'ngen_realization_dt')
+       type = "double"
+       bmi_status = BMI_SUCCESS
     case('ISNOW')
        type = "integer"
        bmi_status = BMI_SUCCESS
@@ -713,6 +730,9 @@ contains
        bmi_status = BMI_SUCCESS
     case("SMCMAX")
        units = 'volumetric'
+       bmi_status = BMI_SUCCESS
+    case('ngen_realization_start_time', 'ngen_realization_end_time', 'ngen_realization_dt')
+       units = "s"
        bmi_status = BMI_SUCCESS
     case default
        units = "-"
@@ -887,6 +907,9 @@ contains
       size = sizeof(this%model%serialization_size)
       bmi_status = BMI_SUCCESS
     case("reset_time")
+      size = sizeof(d)
+      bmi_status = BMI_SUCCESS
+    case("ngen_realization_start_time", "ngen_realization_end_time", "ngen_realization_dt")
       size = sizeof(d)
       bmi_status = BMI_SUCCESS
     case default
@@ -1183,9 +1206,16 @@ contains
     double precision, intent(inout) :: dest(:)
     integer :: bmi_status
 
-    !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR DOUBLE VARS =================
-
     select case(name)
+    case("ngen_realization_start_time")
+       dest(:) = this%ngen_realization_start_time
+       bmi_status = BMI_SUCCESS
+    case("ngen_realization_end_time")
+       dest(:) = this%ngen_realization_end_time
+       bmi_status = BMI_SUCCESS
+    case("ngen_realization_dt")
+       dest(:) = this%ngen_realization_dt
+       bmi_status = BMI_SUCCESS
     case default
        dest(:) = -1.d0
        bmi_status = BMI_FAILURE
@@ -1486,7 +1516,7 @@ contains
     ! this%model%temperature = reshape(src, [this%model%n_y, this%model%n_x])
   end function noahowp_set_float
 
-  ! Set new double values.
+   ! Set new double values.
   function noahowp_set_double(this, name, src) result (bmi_status)
     class (bmi_noahowp), intent(inout) :: this
     character (len=*), intent(in) :: name
@@ -1494,9 +1524,19 @@ contains
     integer :: bmi_status
     integer(kind=int64) :: exec_status
 
-    !==================== UPDATE IMPLEMENTATION IF NECESSARY FOR DOUBLE VARS =================
-
     select case(name)
+    case("ngen_realization_start_time")
+      this%ngen_realization_start_time = src(1)
+      bmi_status = noahowp_apply_realization_time_config(this)
+
+    case("ngen_realization_end_time")
+      this%ngen_realization_end_time = src(1)
+      bmi_status = noahowp_apply_realization_time_config(this)
+
+    case("ngen_realization_dt")
+      this%ngen_realization_dt = src(1)
+      bmi_status = noahowp_apply_realization_time_config(this)
+
     case("reset_time")
       call reset_model_time(this%model, exec_status)
       if (exec_status == 0) then
@@ -1504,8 +1544,9 @@ contains
         call write_log("Time variables reset successfully for state restoring", LOG_LEVEL_DEBUG)
       else
         bmi_status = BMI_FAILURE
-        call write_log(" Failed to reset time variables for state restoring", LOG_LEVEL_FATAL) 
+        call write_log(" Failed to reset time variables for state restoring", LOG_LEVEL_FATAL)
       end if
+
     case default
        bmi_status = BMI_FAILURE
        call write_log("bmi:noahowp_set_double: invalid var " // name, LOG_LEVEL_WARNING)
@@ -1576,6 +1617,91 @@ contains
      end select
    end function noahowp_set_at_indices_double
 
+  function noahowp_apply_realization_time_config(this) result (bmi_status)
+    class (bmi_noahowp), intent(inout) :: this
+    integer :: bmi_status
+
+    integer(kind=int64) :: start_utime
+    integer(kind=int64) :: end_utime
+    integer(kind=int64) :: dt_seconds
+
+    integer :: start_yr, start_mo, start_dy, start_hr, start_min, start_sec
+    integer :: end_yr, end_mo, end_dy, end_hr, end_min, end_sec
+    character(len=12) :: startdate_str
+    character(len=12) :: enddate_str
+
+    bmi_status = BMI_SUCCESS
+
+    if (this%ngen_realization_time_applied) then
+       return
+    end if
+
+    if (this%ngen_realization_start_time <= 0.d0 .or. &
+        this%ngen_realization_end_time   <= 0.d0 .or. &
+        this%ngen_realization_dt         <= 0.d0) then
+       return
+    end if
+
+    start_utime = int(this%ngen_realization_start_time, kind=int64)
+    end_utime   = int(this%ngen_realization_end_time, kind=int64)
+    dt_seconds  = int(this%ngen_realization_dt, kind=int64)
+
+    if (dt_seconds <= 0_int64) then
+       call write_log("NoahOWP realization time config failed: dt_seconds must be positive", LOG_LEVEL_FATAL)
+       bmi_status = BMI_FAILURE
+       return
+    end if
+
+    if (end_utime <= start_utime) then
+       call write_log("NoahOWP realization time config failed: end time must be greater than start time", LOG_LEVEL_FATAL)
+       bmi_status = BMI_FAILURE
+       return
+    end if
+
+    call unix_to_date(dble(start_utime), start_yr, start_mo, start_dy, start_hr, start_min, start_sec)
+    call unix_to_date(dble(end_utime), end_yr, end_mo, end_dy, end_hr, end_min, end_sec)
+
+    write(startdate_str, '(I4.4,I2.2,I2.2,I2.2,I2.2)') start_yr, start_mo, start_dy, start_hr, start_min
+    write(enddate_str,   '(I4.4,I2.2,I2.2,I2.2,I2.2)') end_yr, end_mo, end_dy, end_hr, end_min
+
+    this%model%namelist%startdate = startdate_str
+    this%model%namelist%enddate   = enddate_str
+    this%model%namelist%dt        = real(dt_seconds)
+
+    this%model%domain%startdate      = startdate_str
+    this%model%domain%enddate        = enddate_str
+    this%model%domain%start_datetime = start_utime
+    this%model%domain%end_datetime   = end_utime
+    this%model%domain%dt             = int(dt_seconds)
+
+    this%model%domain%nowdate  = this%model%domain%startdate
+    this%model%domain%itime    = 1
+    this%model%domain%time_dbl = 0.d0
+
+    if (allocated(this%model%domain%sim_datetimes)) then
+       deallocate(this%model%domain%sim_datetimes)
+    end if
+
+    call get_utime_list( &
+       this%model%domain%start_datetime, &
+       this%model%domain%end_datetime, &
+       this%model%domain%dt, &
+       this%model%domain%sim_datetimes &
+    )
+
+    this%model%domain%ntime = size(this%model%domain%sim_datetimes)
+
+    this%ngen_realization_time_applied = .true.
+
+    call write_log("NOAHOWP realization time applied:", LOG_LEVEL_INFO)
+    call write_log("  startdate=" // trim(this%model%domain%startdate), LOG_LEVEL_INFO)
+    call write_log("  enddate=" // trim(this%model%domain%enddate), LOG_LEVEL_INFO)
+    call write_log("  dt_seconds=" // trim(itoa(int(this%model%domain%dt))), LOG_LEVEL_INFO)
+    call write_log("  ntime=" // trim(itoa(this%model%domain%ntime)), LOG_LEVEL_INFO)
+
+    bmi_status = BMI_SUCCESS
+  end function noahowp_apply_realization_time_config
+
    ! A non-BMI helper routine to advance the model by a fractional time step.
 !   subroutine update_frac(this, time_frac)
 !     class (bmi_noahowp), intent(inout) :: this
@@ -1625,5 +1751,6 @@ contains
     bmi_status = BMI_SUCCESS
    endif
  end function register_bmi
+
 #endif
 end module bminoahowp
