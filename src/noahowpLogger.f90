@@ -187,8 +187,13 @@ contains
     integer, intent(in) :: level
 
     select case (level)
+#ifdef NOAHOWP_USE_EWTS
+      case (NOTSET, LOG_LEVEL_DEBUG, LOG_LEVEL_PERFORM, LOG_LEVEL_INFO, &
+            LOG_LEVEL_WARNING, LOG_LEVEL_SEVERE, LOG_LEVEL_FATAL, LOG_LEVEL_STATUS)
+#else
       case (NOTSET, LOG_LEVEL_DEBUG, LOG_LEVEL_PERFORM, LOG_LEVEL_INFO, &
             LOG_LEVEL_WARNING, LOG_LEVEL_SEVERE, LOG_LEVEL_FATAL)
+#endif
         out_level = level
       case (1)
         out_level = LOG_LEVEL_DEBUG
@@ -202,7 +207,11 @@ contains
         out_level = LOG_LEVEL_SEVERE
       case (6)
         out_level = LOG_LEVEL_FATAL
-      case default
+#ifdef NOAHOWP_USE_EWTS
+      case (7)
+        out_level = LOG_LEVEL_STATUS
+#endif
+    case default
         out_level = LOG_LEVEL_INFO
     end select
   end function map_level
