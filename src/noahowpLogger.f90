@@ -4,7 +4,7 @@ module noahowp_log_module
   use logger, only: ewts_write_log_module => write_log_module, &
                     ewts_is_logger_enabled_module => is_logger_enabled_module, &
                     ewts_get_log_level_module => get_log_level_module, &
-                    ewts_logger_init_module => logger_init_module &
+                    ewts_logger_init_module => logger_init_module, &
                     EWTS_NOTSET, &
                     EWTS_DEBUG, &
                     EWTS_PERFORM, &
