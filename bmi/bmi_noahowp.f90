@@ -209,11 +209,17 @@ contains
 
     !call create_logger()
     call write_log("Initializing NOAHOWP BMI", LOG_LEVEL_INFO)
+#ifdef NOAHOWP_USE_EWTS
+    call payload_status(PAYLOAD_INITTING, 0.1d0, "", "")
+#endif
     if (len(config_file) > 0) then
        call initialize_from_file(this%model, config_file)
     else
        !call initialize_from_defaults(this%model)
     end if
+#ifdef NOAHOWP_USE_EWTS
+    call payload_status(PAYLOAD_INITTED, 0.2d0, "", "")
+#endif
     bmi_status = BMI_SUCCESS
   end function noahowp_initialize
 
