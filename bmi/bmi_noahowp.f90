@@ -1658,7 +1658,7 @@ contains
        return
     end if
 
-    if (end_utime <= start_utime) then
+    if (end_utime < start_utime) then
        call write_log("NoahOWP realization time config failed: end time must be greater than start time", LOG_LEVEL_FATAL)
        bmi_status = BMI_FAILURE
        return
