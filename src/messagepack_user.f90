@@ -1013,20 +1013,21 @@ module messagepack_user
                 call this%unpack_value(buffer(byteadvance+1:), tmp, &
                     val_any, successful)
                 byteadvance = byteadvance + tmp
+
+                ! store the newly unpacked object into the array
+                if (successful) then
+                    select type (mpv)
+                    class is (mp_arr_type)
+                        mpv%values(i)%obj = val_any
+                    class default
+                        successful = .false.
+                        this%error_message = 'internal error - unpack_array bad cast'
+                    end select
+                end if
                 if (.not. successful) then
                     deallocate(mpv)
                     return
                 end if
-
-                ! store the newly unpacked object into the array
-                select type (mpv)
-                class is (mp_arr_type)
-                    mpv%values(i)%obj = val_any
-                class default
-                    successful = .false.
-                    deallocate(mpv)
-                    this%error_message = 'internal error - unpack_array bad cast'
-                end select
             end do
         end subroutine
 
@@ -1049,35 +1050,37 @@ module messagepack_user
                 call this%unpack_value(buffer(byteadvance+1:), &
                     tmp, val_any, successful)
                 byteadvance = byteadvance + tmp
+                if (successful) then
+                    select type (mpv)
+                    class is (mp_map_type)
+                        mpv%keys(i)%obj = val_any
+                    class default
+                        successful = .false.
+                        this%error_message = 'internal error - unpack_map bad cast'
+                    end select
+                end if
                 if (.not. successful) then
                     deallocate(mpv)
                     return
                 end if
-                select type (mpv)
-                class is (mp_map_type)
-                    mpv%keys(i)%obj = val_any
-                class default
-                    successful = .false.
-                    deallocate(mpv)
-                    this%error_message = 'internal error - unpack_map bad cast'
-                end select
 
                 ! get value
                 call this%unpack_value(buffer(byteadvance+1:), tmp, &
                     val_any, successful)
                 byteadvance = byteadvance + tmp
+                if (successful) then
+                    select type (mpv)
+                    class is (mp_map_type)
+                        mpv%values(i)%obj = val_any
+                    class default
+                        successful = .false.
+                        print *, "[Error: something went terribly wrong"
+                    end select
+                end if
                 if (.not. successful) then
                     deallocate(mpv)
                     return
                 end if
-                select type (mpv)
-                class is (mp_map_type)
-                    mpv%values(i)%obj = val_any
-                class default
-                    successful = .false.
-                    deallocate(mpv)
-                    print *, "[Error: something went terribly wrong"
-                end select
             end do
         end subroutine
 
@@ -1162,8 +1165,10 @@ module messagepack_user
                 byteadvance = byteadvance + length
             class default
                 successful = .false.
-                deallocate(mpv)
                 this%error_message = 'internal error - unpack_ext bad cast'
             end select
+            if (.not. successful) then
+                deallocate(mpv)
+            end if
         end subroutine
 end module
