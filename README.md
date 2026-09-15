@@ -10,6 +10,8 @@ Noah-OWP-Modular is in active development. Check back often for project updates.
 
 Noah-OWP-Modular has been tested on Unix-based systems such as MacOS and Linux. Its only dependency is NetCDF.
 
+Serialization uses a modified version of [Fortran MessagePack](https://github.com/synthfi/fortran-messagepack).
+
 ## Installation and Configuration
 
 Detailed instructions on how to install, configure, and run Noah-OWP-Modular can be found in our [INSTALL](INSTALL.md) guide.
